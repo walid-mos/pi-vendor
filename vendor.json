@@ -1,18 +1,15 @@
 {
   "$comment": "One entry per vendored Pi package. packages/<dir> holds the exact published tarball contents; local changes live in patches/<dir>/*.patch.",
   "packages": {
-    "fradser-pi-magpie": {
-      "source": "npm",
-      "name": "@fradser/pi-magpie",
-      "version": "0.4.0",
-      "integrity": "sha512-rUmS8MCasmd5dTMNgzBXsZkrSaKRprfSDyj82CpaqZSnsujb8ZAmK+oNnDajQsdUAHgzCKNsCfgTcOqpw3Y5Vw==",
-      "tarball": "https://registry.npmjs.org/@fradser/pi-magpie/-/pi-magpie-0.4.0.tgz",
-      "repository": "https://github.com/FradSer/pi-packages",
-      "license": "MIT",
-      "vendoredAt": "2026-11-22",
+    "decide": {
+      "source": "local",
+      "path": "local/decide",
+      "version": "0.2.0",
+      "license": "private",
+      "writtenAt": "2026-11-24",
       "testedWithPi": "1.6.0",
       "patches": [],
-      "review": "Full source read at 0.4.0: no dependencies, no install scripts. Only network call is GET <gateway>/v1/models with the gateway key. Reads ~/.pi/agent/models.json and auth.json; writes only the /login credential via Pi."
+      "review": "Written for this setup (plan modeles-routage, phase B; 0.2.0: reads the gateway from Pi, no launcher). No dependencies, no install scripts. Only network call: POST <magpie baseUrl>/systemone (group/decide) with the key of Pi's `magpie` provider, resolved through ctx.modelRegistry (models.json + auth.json). Reads and writes no file."
     }
   }
 }

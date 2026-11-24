@@ -1,0 +1,12 @@
+{
+  "name": "decide",
+  "version": "0.2.0",
+  "description": "Pi tool `decide`: closed questions answered by Jev (System One) through the Magpie gateway (group/decide)",
+  "private": true,
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

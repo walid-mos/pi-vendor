@@ -9,21 +9,29 @@ Pi loads each package from this checkout as a local package, so nothing is fetch
 ```
 vendor.json          # source, version, integrity and review notes for each package
 packages/<dir>/      # exact contents of the published tarball, never edited by hand
+local/<dir>/         # our own packages (not published), reviewed like the others
 patches/<dir>/       # local changes, applied on top of packages/<dir> after each update
 ```
 
 ## Packages
 
-| Dir | Upstream | Version |
+None at the moment. The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no
+third-party provider extension is needed.
+
+## Local packages
+
+Written for this setup, not published. Same review rule: read in full, no runtime dependency, network calls listed in `vendor.json`.
+
+| Dir | What | Version |
 |---|---|---|
-| `fradser-pi-magpie` | [`@fradser/pi-magpie`](https://www.npmjs.com/package/@fradser/pi-magpie) | 0.4.0 |
+| `local/decide` | tool `decide`: closed questions (choice, yes/no, rating) answered by Jev through Magpie `group/decide` | 0.2.0 |
 
 ## Wire into Pi
 
 In `~/.pi/agent/settings.json` (tracked in the `pi-agent` repo):
 
 ```json
-{ "packages": ["~/.config/pi-vendor/packages/fradser-pi-magpie"] }
+{ "packages": ["~/.config/pi-vendor/local/decide"] }
 ```
 
 Then `/reload` in Pi, or restart it.
