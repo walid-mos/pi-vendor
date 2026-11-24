@@ -15,8 +15,13 @@ patches/<dir>/       # local changes, applied on top of packages/<dir> after eac
 
 ## Packages
 
-None at the moment. The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no
-third-party provider extension is needed.
+| Dir | Upstream | Version |
+|---|---|---|
+| `infisical-ai-skills` | [`Infisical/ai-skills`](https://github.com/Infisical/ai-skills) (git, MIT): only `infisical-self-host`, `infisical-access-control`, `infisical-setup` | commit `4bd1270` |
+
+The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no provider extension is needed.
+Herdr's agent manuals are not vendored: they ship inside its binaries (`hc --skill`, `herdr-app --skill`) and always
+match the installed version; the `herdr` skill in `pi-agent` points to them.
 
 ## Local packages
 
@@ -47,6 +52,11 @@ Updates are always manual and reviewed:
 5. Replace `packages/<dir>/`, reapply `patches/<dir>/*.patch`, update `vendor.json`.
 6. Test with `pi --list-models` and, for providers, `pi auth check --provider <id>`.
 7. Commit one package update per commit.
+
+For a package taken from a git repository (`"source": "git"` in `vendor.json`), replace steps 1 and 2: clone into an
+empty temporary directory, check out the pinned commit, copy only the listed `paths`, and record the git tree IDs and
+the content hash (`contentSha256Method`). Skills are not run by Pi: review their scripts and the commands they tell
+the agent to run.
 
 ## Limitation
 

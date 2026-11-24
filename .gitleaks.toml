@@ -1,0 +1,14 @@
+# gitleaks: default rules, plus narrow allowlists for known false positives in vendored content.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Illustrative ENCRYPTION_KEY / AUTH_SECRET values in Infisical's official docs (vendored unchanged)"
+paths = ['''^packages/infisical-ai-skills/skills/infisical-self-host/references/docker-deployment\.md$''']
+
+[[allowlists]]
+description = "Git tree / blob IDs recorded as integrity data in vendor.json"
+paths = ['''^vendor\.json$''']
+regexTarget = "secret"
+regexes = ['''^[0-9a-f]{40}$''']
+condition = "AND"

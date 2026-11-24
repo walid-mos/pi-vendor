@@ -10,6 +10,32 @@
       "testedWithPi": "1.6.0",
       "patches": [],
       "review": "Written for this setup (plan modeles-routage, phase B; 0.2.0: reads the gateway from Pi, no launcher). No dependencies, no install scripts. Only network call: POST <magpie baseUrl>/systemone (group/decide) with the key of Pi's `magpie` provider, resolved through ctx.modelRegistry (models.json + auth.json). Reads and writes no file."
+    },
+    "infisical-ai-skills": {
+      "source": "git",
+      "repository": "https://github.com/Infisical/ai-skills",
+      "commit": "4bd1270d8a57f7433bfdc137b21686a9cccfa1a1",
+      "paths": [
+        "skills/infisical-self-host",
+        "skills/infisical-access-control",
+        "skills/infisical-setup",
+        "LICENSE"
+      ],
+      "integrity": {
+        "gitTrees": {
+          "skills/infisical-self-host": "91c24d59be6396159f9715204dbeae1f629344fa",
+          "skills/infisical-access-control": "1f06d8989925c743b2ad91554d791628b478ae43",
+          "skills/infisical-setup": "435d8d2539bba0d35f4c4c130cc1483c94f034ef",
+          "LICENSE": "20362ab551bdeae44d58126ff1dd6c8dc442627f"
+        },
+        "contentSha256": "0d4393aac505eee51390db264a272993a1214b5f3d154b95829181ff0d4f6354",
+        "contentSha256Method": "cd packages/infisical-ai-skills && find . -type f | sort | xargs shasum -a 256 | shasum -a 256"
+      },
+      "license": "MIT",
+      "vendoredAt": "2026-11-24",
+      "testedWithPi": "1.6.0",
+      "patches": [],
+      "review": "Markdown only (17 files: 3 SKILL.md, 13 references, LICENSE): no scripts, no executable files. Commands quoted are the official CLI installers (artifacts-cli.infisical.com, curl|bash in Docker/CI examples), `npx skills add`, `pip install infisicalsdk`; some lines still cite dl.cloudsmith.io, retired on 2026-09-16. No hidden instructions found. Our rules live in pi-agent skills/infisical, which takes precedence."
     }
   }
 }
