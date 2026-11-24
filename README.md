@@ -7,8 +7,8 @@ Pi loads each package from this checkout as a local package, so nothing is fetch
 ## Layout
 
 ```
-vendor.json          # source, version, integrity and review notes for each package
-packages/<dir>/      # exact contents of the published tarball, never edited by hand
+vendor.json          # source, pinned version or commit, integrity and review notes for each package
+packages/<dir>/      # exact upstream contents (npm tarball, or the listed paths of a git commit), never edited by hand
 local/<dir>/         # our own packages (not published), reviewed like the others
 patches/<dir>/       # local changes, applied on top of packages/<dir> after each update
 ```
@@ -36,10 +36,26 @@ Written for this setup, not published. Same review rule: read in full, no runtim
 In `~/.pi/agent/settings.json` (tracked in the `pi-agent` repo):
 
 ```json
-{ "packages": ["~/.config/pi-vendor/local/decide"] }
+{
+  "packages": [
+    "~/.config/pi-vendor/local/decide",
+    "~/.config/pi-vendor/packages/infisical-ai-skills"
+  ]
+}
 ```
 
 Then `/reload` in Pi, or restart it.
+
+## Watch upstream
+
+No script: upstream changes are followed through GitHub's per-path commit feeds, which only fire when a vendored path changes
+(`Infisical/ai-skills` has no releases or tags, so GitHub's Watch button would never notify).
+
+- `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-setup.atom`
+- `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-self-host.atom`
+- `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-access-control.atom`
+
+When a vendored package is added or removed, update this list.
 
 ## Update a package
 

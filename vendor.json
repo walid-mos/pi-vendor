@@ -1,5 +1,5 @@
 {
-  "$comment": "One entry per vendored Pi package. packages/<dir> holds the exact published tarball contents; local changes live in patches/<dir>/*.patch.",
+  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents. source=git: packages/<dir> holds only the listed paths at the pinned commit. source=local: our own code in local/<dir>. Local changes to upstream packages live in patches/<dir>/*.patch.",
   "packages": {
     "decide": {
       "source": "local",
