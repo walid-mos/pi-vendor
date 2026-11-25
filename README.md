@@ -24,17 +24,9 @@ match the installed version; the `herdr` skill in `pi-agent` points to them.
 
 ## Wire into Pi
 
-In `~/.pi/agent/settings.json` (tracked in the `pi-agent` repo):
-
-```json
-{
-  "packages": [
-    "~/.config/pi/pi-vendor/packages/infisical-ai-skills"
-  ]
-}
-```
-
-Then `/reload` in Pi, or restart it.
+This repository is cloned at `~/.config/pi/pi-vendor`. Pi loads `~/.config/pi` as one local package (declared in
+`~/.pi/agent/settings.json`), whose `package.json` (dotfiles) picks up `packages/*/skills` here. A package's extension
+is added to that `package.json` by its path, after review. Then `/reload` in Pi, or restart it.
 
 ## Watch upstream
 
