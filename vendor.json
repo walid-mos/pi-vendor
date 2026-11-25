@@ -1,16 +1,6 @@
 {
-  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents. source=git: packages/<dir> holds only the listed paths at the pinned commit. source=local: our own code in local/<dir>. Local changes to upstream packages live in patches/<dir>/*.patch.",
+  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents. source=git: packages/<dir> holds only the listed paths at the pinned commit. Local changes to upstream packages live in patches/<dir>/*.patch.",
   "packages": {
-    "decide": {
-      "source": "local",
-      "path": "local/decide",
-      "version": "0.2.0",
-      "license": "private",
-      "writtenAt": "2026-11-24",
-      "testedWithPi": "1.6.0",
-      "patches": [],
-      "review": "Written for this setup (plan modeles-routage, phase B; 0.2.0: reads the gateway from Pi, no launcher). No dependencies, no install scripts. Only network call: POST <magpie baseUrl>/systemone (group/decide) with the key of Pi's `magpie` provider, resolved through ctx.modelRegistry (models.json + auth.json). Reads and writes no file."
-    },
     "infisical-ai-skills": {
       "source": "git",
       "repository": "https://github.com/Infisical/ai-skills",
