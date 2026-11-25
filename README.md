@@ -29,7 +29,7 @@ In `~/.pi/agent/settings.json` (tracked in the `pi-agent` repo):
 ```json
 {
   "packages": [
-    "~/.config/pi-vendor/packages/infisical-ai-skills"
+    "~/.config/pi/pi-vendor/packages/infisical-ai-skills"
   ]
 }
 ```
