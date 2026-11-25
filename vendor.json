@@ -19,12 +19,18 @@
           "LICENSE": "20362ab551bdeae44d58126ff1dd6c8dc442627f"
         },
         "contentSha256": "0d4393aac505eee51390db264a272993a1214b5f3d154b95829181ff0d4f6354",
-        "contentSha256Method": "cd packages/infisical-ai-skills && find . -type f | sort | xargs shasum -a 256 | shasum -a 256"
+        "patchedContentSha256": "c44b4f4afa76dd067357d7414d6f8e0280be484578c78615eba6005a6f20585b",
+        "contentSha256Method": "cd packages/infisical-ai-skills && find . -type f | sort | xargs shasum -a 256 | shasum -a 256 (contentSha256: upstream paths before patches; patchedContentSha256: after patches, what packages/ holds)"
       },
       "license": "MIT",
       "vendoredAt": "2026-11-24",
       "testedWithPi": "1.6.0",
-      "patches": [],
+      "patches": [
+        {
+          "file": "0001-infisical-setup-description-under-1024.patch",
+          "reason": "Upstream infisical-setup description is 1188 characters; Pi caps descriptions at 1024 and warns at startup. Drops the SDK and auth-method enumerations (still listed in references/sdks.md and references/machine-identity-auth.md) and shortens the 'Use' clause, to 1020 characters."
+        }
+      ],
       "review": "Markdown only (17 files: 3 SKILL.md, 13 references, LICENSE): no scripts, no executable files. Commands quoted are the official CLI installers (artifacts-cli.infisical.com, curl|bash in Docker/CI examples), `npx skills add`, `pip install infisicalsdk`; some lines still cite dl.cloudsmith.io, retired on 2026-09-16. No hidden instructions found. Our rules live in pi-agent skills/infisical, which takes precedence."
     }
   }

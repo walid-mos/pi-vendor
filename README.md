@@ -8,7 +8,7 @@ Pi loads each package from this checkout as a local package, so nothing is fetch
 
 ```
 vendor.json          # source, pinned version or commit, integrity and review notes for each package
-packages/<dir>/      # exact upstream contents (npm tarball, or the listed paths of a git commit), never edited by hand
+packages/<dir>/      # upstream contents (npm tarball, or the listed paths of a git commit) with patches/<dir> applied, never edited by hand
 patches/<dir>/       # local changes, applied on top of packages/<dir> after each update
 ```
 
