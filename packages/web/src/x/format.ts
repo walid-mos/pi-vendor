@@ -56,7 +56,9 @@ function engagementLine(e: XStatus["engagement"]): string {
 }
 
 function mediaLine(m: MediaLine): string {
-	const video = m.durationS === undefined ? "" : ` (a ${m.durationS} s video; the image is its poster)`;
+	// A video is its poster frame; a video whose poster was not attached has no image to stand for it.
+	const poster = m.outcome.state === "attached" ? "; the image is its poster" : "";
+	const video = m.durationS === undefined ? "" : ` (a ${m.durationS} s video${poster})`;
 	const alt = m.altText ? `: ${m.altText}` : "";
 	switch (m.outcome.state) {
 		case "attached":

@@ -90,3 +90,9 @@ test("the media list has one line per item: its label, a video's duration, alt t
 		text,
 	);
 });
+
+test("a video that is left out is not said to be shown by its poster", () => {
+	const media: MediaLine[] = [{ label: "video 1", durationS: 3, outcome: { state: "left_out", reason: "the video has no poster" } }];
+	const text = formatPost(decodePost(load("thread-text.json")), media);
+	assert.ok(text.endsWith("Media:\n- video 1 (a 3 s video): not attached (the video has no poster)"), text);
+});
