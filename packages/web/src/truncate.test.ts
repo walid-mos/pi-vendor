@@ -41,7 +41,7 @@ test("text over the byte limit keeps whole lines within it", async () => {
 	try {
 		assert.equal(capped.truncated, true);
 		const kept = capped.text.slice(0, capped.text.indexOf("\n\n["));
-		assert.equal(kept.split("\n").length, 5, "5 lines fit in 1000 bytes (993 with their newlines); the note comes after");
+		assert.equal(kept.split("\n").length, 5, "5 lines fit within the byte limit and a 6th would not; the note comes after");
 		assert.ok(kept.split("\n").every((l) => l === line), "no line is cut");
 		assert.equal(readFileSync(capped.fullOutputPath!, "utf8"), full);
 	} finally {
@@ -50,12 +50,22 @@ test("text over the byte limit keeps whole lines within it", async () => {
 });
 
 test("a single line longer than the byte limit is cut inside the line, on a character boundary", async () => {
-	const full = "é".repeat(2000);
+	const full = "€".repeat(2000); // 3 bytes each: the 1000th byte is the first of a character's 3
 	const capped = await capText(full, limits);
 	try {
 		const kept = capped.text.slice(0, capped.text.indexOf("\n\n["));
-		assert.ok(kept.length > 0 && /^é+$/.test(kept));
+		assert.match(kept, /^€+$/, "no half character, no replacement character");
+		assert.equal(kept.length, 333);
 		assert.ok(Buffer.byteLength(capped.text) <= limits.maxBytes + 200, "the note adds only its own short text");
+	} finally {
+		cleanUp(capped.fullOutputPath);
+	}
+});
+
+test("the note of a cut inside a line says that only the start of the line is shown", async () => {
+	const capped = await capText(`${"€".repeat(2000)}\nsecond line`, limits);
+	try {
+		assert.match(capped.text, /\[Output truncated: the start of line 1 of 2 \(999 of 6012 bytes\)\]/);
 	} finally {
 		cleanUp(capped.fullOutputPath);
 	}

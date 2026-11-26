@@ -16,19 +16,20 @@ export type Capped = { text: string; truncated: false } | { text: string; trunca
 
 export async function capText(text: string, limits: Limits): Promise<Capped> {
 	const lines = text.split("\n");
-	if (lines.length <= limits.maxLines && Buffer.byteLength(text) <= limits.maxBytes) return { text, truncated: false };
+	const totalBytes = Buffer.byteLength(text);
+	if (lines.length <= limits.maxLines && totalBytes <= limits.maxBytes) return { text, truncated: false };
 
-	const kept = keep(lines, limits);
+	const { text: kept, insideLine } = keep(lines, limits);
 	const dir = await mkdtemp(join(tmpdir(), "pi-web-"));
 	const fullOutputPath = join(dir, "full-output.txt");
 	await writeFile(fullOutputPath, text, { mode: 0o600 });
-	const shown = kept.split("\n").length;
-	const note = `[Output truncated: lines 1 to ${shown} of ${lines.length} (${Buffer.byteLength(kept)} of ${Buffer.byteLength(text)} bytes)] Full text: ${fullOutputPath}`;
+	const shown = insideLine ? "the start of line 1" : `lines 1 to ${kept.split("\n").length}`;
+	const note = `[Output truncated: ${shown} of ${lines.length} (${Buffer.byteLength(kept)} of ${totalBytes} bytes)] Full text: ${fullOutputPath}`;
 	return { text: `${kept}\n\n${note}`, truncated: true, fullOutputPath };
 }
 
 /** Whole lines within both limits; when not even the first line fits, as much of it as fits, on a character boundary. */
-function keep(lines: string[], limits: Limits): string {
+function keep(lines: string[], limits: Limits): { text: string; insideLine: boolean } {
 	let bytes = 0;
 	let count = 0;
 	for (const line of lines.slice(0, limits.maxLines)) {
@@ -37,6 +38,6 @@ function keep(lines: string[], limits: Limits): string {
 		bytes += size;
 		count++;
 	}
-	if (count > 0) return lines.slice(0, count).join("\n");
-	return new TextDecoder().decode(Buffer.from(lines[0]).subarray(0, limits.maxBytes)).replace(/\uFFFD$/, "");
+	if (count > 0) return { text: lines.slice(0, count).join("\n"), insideLine: false };
+	return { text: new TextDecoder().decode(Buffer.from(lines[0]).subarray(0, limits.maxBytes)).replace(/\uFFFD$/, ""), insideLine: true };
 }

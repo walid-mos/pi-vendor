@@ -76,3 +76,22 @@ test("page mode keeps the nav and footer that article mode leaves out", () => {
 	assert.match(markdown, /FOOTER-TEXT-MARKER/);
 	assert.doesNotMatch(markdown, /SCRIPT-TEXT-MARKER|STYLE-TEXT-MARKER/);
 });
+
+test("an empty page gives empty markdown", () => {
+	assert.equal(extract("", BASE, "page").markdown, "");
+});
+
+test("a page that leaves out <html>, <head> and <body> keeps its content", () => {
+	const { markdown } = extract("<!doctype html><title>Bare</title><p>Bare page text.</p>", BASE, "page");
+	assert.match(markdown, /Bare page text\./);
+});
+
+test("links are resolved against the page's <base href>", () => {
+	const html = fixture("article.html")
+		.replace("<head>", '<head><base href="/assets/">')
+		.replace('href="/guides/tide-tables"', 'href="guides/tide-tables"');
+	for (const mode of ["article", "page"] as const) {
+		const { markdown } = extract(html, BASE, mode);
+		assert.match(markdown, /\]\(https:\/\/coastal\.example\.com\/assets\/guides\/tide-tables\)/, mode);
+	}
+});
