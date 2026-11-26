@@ -3,6 +3,8 @@
  * selects a reading, and a failure of one route never tries another.
  */
 
+import { bareHost } from "./url.ts";
+
 export type SocialSite = "instagram" | "threads" | "tiktok";
 
 export type Route = { kind: "x_status"; id: string } | { kind: "social_meta"; site: SocialSite } | { kind: "generic" };
@@ -23,8 +25,7 @@ const SOCIAL_HOSTS: Record<string, SocialSite> = {
 };
 
 export function routeFor(url: URL): Route {
-	// Without the final dot of a fully qualified name (`x.com.`), as `url.ts` does, and without a `www.`-style prefix.
-	const host = url.hostname.toLowerCase().replace(/\.$/, "").replace(/^(?:www|m|mobile)\./, "");
+	const host = bareHost(url).replace(/^(?:www|m|mobile)\./, "");
 	if (X_HOSTS.has(host)) {
 		const id = X_STATUS_PATH.exec(url.pathname)?.[1];
 		return id ? { kind: "x_status", id } : { kind: "generic" };

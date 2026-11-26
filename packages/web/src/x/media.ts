@@ -4,7 +4,8 @@
  */
 
 import { WebToolError } from "../errors.ts";
-import { get, PRODUCTION, type Network } from "../http.ts";
+import { compact } from "../compact.ts";
+import { get, mimeOf, PRODUCTION, type Network } from "../http.ts";
 import type { XPost, XStatus } from "./payload.ts";
 
 /** Images sent to the model per post: each costs context, and each is a channel for injected instructions. */
@@ -79,10 +80,6 @@ function statusMedia(status: XStatus, prefix: string): Item[] {
 	return [...photos, ...gifs, ...videos, ...card];
 }
 
-function compact(item: Item): Item {
-	return Object.fromEntries(Object.entries(item).filter(([, v]) => v !== undefined)) as Item;
-}
-
 export async function downloadImage(url: string, deps: MediaDeps, signal?: AbortSignal): Promise<{ bytes: Buffer; mimeType: string }> {
 	if (!URL.canParse(url)) throw new WebToolError({ kind: "invalid_url", url, reason: "not a URL" });
 	const fetched = await get(
@@ -98,7 +95,7 @@ export async function downloadImage(url: string, deps: MediaDeps, signal?: Abort
 		},
 		deps.network,
 	);
-	const mimeType = fetched.contentType.split(";")[0].trim().toLowerCase();
+	const mimeType = mimeOf(fetched.contentType);
 	if (!IMAGE_TYPES.has(mimeType)) throw new WebToolError({ kind: "unsupported_media_type", mimeType });
 	return { bytes: fetched.body, mimeType };
 }

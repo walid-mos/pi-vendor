@@ -4,6 +4,7 @@
  * FxTwitter's own error reply is x_unavailable. No network here.
  */
 
+import { compact } from "../compact.ts";
 import { WebToolError } from "../errors.ts";
 
 /** Quotes of quotes: the model rarely needs more than three levels to follow a conversation. */
@@ -220,9 +221,4 @@ function count(value: unknown, path: string): number | undefined {
 	if (value == null) return undefined;
 	if (typeof value !== "number") throw bad(`${path} is not a number`);
 	return value;
-}
-
-/** The object without its undefined fields, so that what is absent is absent. */
-function compact<T extends object>(value: T): T {
-	return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as T;
 }

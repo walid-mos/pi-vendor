@@ -12,7 +12,7 @@ import { pipeline } from "node:stream/promises";
 import { createBrotliDecompress, createGunzip, createInflate } from "node:zlib";
 
 import { isPublicAddress } from "./address.ts";
-import { WebToolError } from "./errors.ts";
+import { messageOf, WebToolError, withDeadline } from "./errors.ts";
 import { parseTarget } from "./url.ts";
 
 /** Generic on purpose: nothing that identifies the user or a project. */
@@ -55,14 +55,11 @@ export type Fetched = {
 };
 
 export async function get(url: URL, options: GetOptions, network: Network): Promise<Fetched> {
-	const deadline = AbortSignal.timeout(options.timeoutMs);
-	const signal = options.signal ? AbortSignal.any([options.signal, deadline]) : deadline;
+	const deadline = withDeadline(options.timeoutMs, options.signal);
 	try {
-		return await follow(url, options, network, signal);
+		return await follow(url, options, network, deadline.signal);
 	} catch (thrown) {
-		if (options.signal?.aborted) throw new WebToolError({ kind: "aborted" }, { cause: thrown });
-		if (deadline.aborted) throw new WebToolError({ kind: "timeout", afterMs: options.timeoutMs }, { cause: thrown });
-		throw thrown;
+		throw deadline.rethrow(thrown);
 	}
 }
 
@@ -188,11 +185,9 @@ function toWebToolError(thrown: unknown, url: URL): unknown {
 	const code = (thrown as NodeJS.ErrnoException | undefined)?.code;
 	if (typeof code !== "string") return thrown;
 	if (DNS_CODES.has(code)) return new WebToolError({ kind: "dns_failed", host: url.hostname, code }, { cause: thrown });
-	return new WebToolError({ kind: "network", code, message: messageOf(thrown) }, { cause: thrown });
+	return new WebToolError({ kind: "network", code, message: messageOf(thrown as Error) }, { cause: thrown });
 }
 
-/** A connection that failed on every address of a name is an AggregateError whose own message is empty. */
-function messageOf(thrown: unknown): string {
-	if (thrown instanceof AggregateError) return thrown.errors.map((error) => (error as Error).message).join("; ");
-	return (thrown as Error).message;
+export function mimeOf(contentType: string): string {
+	return contentType.split(";")[0].trim().toLowerCase();
 }

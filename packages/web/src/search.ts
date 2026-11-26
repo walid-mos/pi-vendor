@@ -4,7 +4,7 @@
  * The gateway is a private address, reached with the global fetch, not with the public-only client of `http.ts`.
  */
 
-import { WebToolError } from "./errors.ts";
+import { messageOf, WebToolError, withDeadline } from "./errors.ts";
 import { USER_AGENT } from "./http.ts";
 
 /** Magpie's own search has a limit inside this one; this one bounds a gateway that does not answer. */
@@ -30,8 +30,7 @@ export function gatewayFrom(baseUrl: string | undefined, key: string | undefined
 }
 
 export async function search(params: SearchParams, gateway: Gateway, deps: { timeoutMs: number; signal?: AbortSignal }): Promise<string> {
-	const deadline = AbortSignal.timeout(deps.timeoutMs);
-	const signal = deps.signal ? AbortSignal.any([deps.signal, deadline]) : deadline;
+	const deadline = withDeadline(deps.timeoutMs, deps.signal);
 	const args: Record<string, unknown> = { query: params.query };
 	if (params.count !== undefined) args.count = params.count;
 	if (params.freshness !== undefined) args.recency_days = RECENCY_DAYS[params.freshness];
@@ -50,25 +49,19 @@ export async function search(params: SearchParams, gateway: Gateway, deps: { tim
 			body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "web_search", arguments: args } }),
 			// The gateway answers itself: a redirect would send the query, and maybe the key, elsewhere.
 			redirect: "manual",
-			signal,
+			signal: deadline.signal,
 		});
 		status = res.status;
 		text = await res.text();
 	} catch (thrown) {
-		if (deps.signal?.aborted) throw new WebToolError({ kind: "aborted" }, { cause: thrown });
-		if (deadline.aborted) throw new WebToolError({ kind: "timeout", afterMs: deps.timeoutMs }, { cause: thrown });
+		const rethrown = deadline.rethrow(thrown);
+		if (rethrown !== thrown) throw rethrown;
 		// fetch wraps the system error in a TypeError: the code and the message are on its cause.
 		const system = (thrown as Error).cause as NodeJS.ErrnoException | undefined;
 		if (typeof system?.code !== "string") throw thrown;
 		throw new WebToolError({ kind: "network", code: system.code, message: messageOf(system) }, { cause: thrown });
 	}
 	return readReply(status, text);
-}
-
-/** A connection that failed on every address of a name is an AggregateError whose own message is empty. */
-function messageOf(system: Error): string {
-	if (system instanceof AggregateError) return system.errors.map((error) => (error as Error).message).join("; ");
-	return system.message;
 }
 
 function readReply(status: number, text: string): string {

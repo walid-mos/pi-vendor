@@ -128,3 +128,25 @@ export function describe(error: WebError): string {
 		}
 	}
 }
+
+/** A connection that failed on every address of a name is an AggregateError whose own message is empty. */
+export function messageOf(system: Error): string {
+	if (system instanceof AggregateError) return system.errors.map((error) => (error as Error).message).join("; ");
+	return system.message;
+}
+
+/**
+ * One deadline combined with the caller's abort signal. `rethrow` turns what a request threw into `aborted` (the
+ * caller's signal wins) or `timeout` (the deadline fired), and returns anything else untouched.
+ */
+export function withDeadline(timeoutMs: number, caller?: AbortSignal): { signal: AbortSignal; rethrow: (thrown: unknown) => unknown } {
+	const deadline = AbortSignal.timeout(timeoutMs);
+	return {
+		signal: caller ? AbortSignal.any([caller, deadline]) : deadline,
+		rethrow(thrown) {
+			if (caller?.aborted) return new WebToolError({ kind: "aborted" }, { cause: thrown });
+			if (deadline.aborted) return new WebToolError({ kind: "timeout", afterMs: timeoutMs }, { cause: thrown });
+			return thrown;
+		},
+	};
+}

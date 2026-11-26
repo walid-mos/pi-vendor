@@ -5,10 +5,11 @@
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
+import { compact } from "./compact.ts";
 import { decodeText } from "./decode.ts";
 import { WebToolError, type WebError } from "./errors.ts";
 import { extract, type Extracted } from "./extract.ts";
-import { get, type Fetched, type Network } from "./http.ts";
+import { get, mimeOf, type Fetched, type Network } from "./http.ts";
 import { extractPdf, MAX_PDF_PAGES, PDF_TIMEOUT_MS } from "./pdf.ts";
 import { routeFor, type Route } from "./route.ts";
 import { gatewayFrom, search, SEARCH_TIMEOUT_MS, type SearchParams } from "./search.ts";
@@ -98,10 +99,7 @@ export function createWebTools(deps: WebToolsDeps) {
 				const { baseUrl, key } = await deps.magpie(ctx);
 				const text = await search(params, gatewayFrom(baseUrl, key), { timeoutMs: SEARCH_TIMEOUT_MS, signal });
 				const capped = await capText(text, deps.outputLimits);
-				const details: SearchDetails = { ok: true, query: params.query, bytes: Buffer.byteLength(text), truncated: capped.truncated };
-				if (params.count !== undefined) details.count = params.count;
-				if (params.freshness !== undefined) details.freshness = params.freshness;
-				if (capped.truncated) details.fullOutputPath = capped.fullOutputPath;
+				const details = withOutput({ ok: true as const, query: params.query, ...compact({ count: params.count, freshness: params.freshness }), bytes: Buffer.byteLength(text) }, capped);
 				return { content: [{ type: "text", text: capped.text }], details };
 			} catch (thrown) {
 				return failure(thrown);
@@ -239,20 +237,30 @@ async function readXPost(deps: WebToolsDeps, id: string, withReplies: boolean, s
 	const images: Content[] = [];
 	const lines: MediaLine[] = [];
 	const media: Extract<FetchDetails, { kind: "x_status" }>["media"] = [];
-	for (const ref of refs) {
+	// The images are independent: they download together, and the results are read back in the order of the text.
+	const downloaded = await Promise.all(
+		refs.map(async (ref) => {
+			try {
+				const { bytes, mimeType } = await downloadImage(ref.url, deps.media, callSignal);
+				return { resized: await resize(deps, bytes, mimeType) };
+			} catch (thrown) {
+				// A failed image is not a failed call, and it is never silent: the text, the details and the renderer say so.
+				if (!(thrown instanceof WebToolError)) throw thrown;
+				return { error: thrown.error };
+			}
+		}),
+	);
+	for (const [i, ref] of refs.entries()) {
 		const line: MediaLine = { label: ref.label, outcome: { state: "attached" } };
 		if (ref.altText) line.altText = ref.altText;
 		if (ref.durationS !== undefined) line.durationS = ref.durationS;
-		try {
-			const { bytes, mimeType } = await downloadImage(ref.url, deps.media, callSignal);
-			const resized = await resize(deps, bytes, mimeType);
+		const { resized, error } = downloaded[i];
+		if (resized) {
 			images.push({ type: "image", data: resized.data, mimeType: resized.mimeType });
 			media.push({ label: ref.label, url: ref.url, state: "attached", width: resized.width, height: resized.height });
-		} catch (thrown) {
-			// A failed image is not a failed call, and it is never silent: the text, the details and the renderer say so.
-			if (!(thrown instanceof WebToolError)) throw thrown;
-			line.outcome = { state: "failed", error: thrown.error };
-			media.push({ label: ref.label, url: ref.url, state: "failed", error: thrown.error });
+		} else {
+			line.outcome = { state: "failed", error };
+			media.push({ label: ref.label, url: ref.url, state: "failed", error });
 		}
 		lines.push(line);
 	}
@@ -316,10 +324,6 @@ function sourceLine(url: string, finalUrl: string): string {
 	return finalUrl === url ? `Source: ${finalUrl}` : `Source: ${finalUrl} (redirected from ${url})`;
 }
 
-function mimeOf(contentType: string): string {
-	return contentType.split(";")[0].trim().toLowerCase();
-}
-
 function isPdfType(contentType: string): boolean {
 	return mimeOf(contentType) === "application/pdf";
 }
@@ -327,8 +331,3 @@ function isPdfType(contentType: string): boolean {
 function withOutput<T extends object>(details: T, capped: Awaited<ReturnType<typeof capText>>): T & { truncated: boolean; fullOutputPath?: string } {
 	return capped.truncated ? { ...details, truncated: true, fullOutputPath: capped.fullOutputPath } : { ...details, truncated: false };
 }
-
-function compact<T extends object>(value: T): T {
-	return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as T;
-}
-
