@@ -84,6 +84,13 @@ const fromServers: WebError[] = [
 	{ kind: "pdf_unreadable", reason: long },
 	{ kind: "unsupported_content_type", contentType: long },
 	{ kind: "unsupported_charset", charset: long },
+	// A redirect's Location is a server's text too: it ends up in these URLs and host names.
+	{ kind: "invalid_url", url: long, reason: "not a URL" },
+	{ kind: "http_status", status: 404, url: long },
+	{ kind: "too_many_redirects", limit: 5, chain: [long] },
+	{ kind: "dns_failed", host: long, code: "ENOTFOUND" },
+	{ kind: "blocked_address", host: long, address: "127.0.0.1" },
+	{ kind: "media_host_blocked", host: long },
 ];
 
 for (const error of fromServers) {
@@ -94,6 +101,11 @@ for (const error of fromServers) {
 		assert.match(text, /1500 more characters/);
 	});
 }
+
+test("a cut never leaves half of a surrogate pair", () => {
+	const text = describe({ kind: "gateway_refused", status: 500, message: `${"x".repeat(499)}😀${"y".repeat(100)}` });
+	assert.ok(text.isWellFormed(), "the sentence is well-formed Unicode");
+});
 
 test("WebToolError keeps the error it was caught from as its cause", () => {
 	const cause = Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });

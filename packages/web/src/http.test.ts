@@ -39,7 +39,7 @@ function lookupFrom(table: Record<string, string>): Network["lookup"] {
 	}) as Network["lookup"];
 }
 
-/** Test network: the local servers' 127.0.0.1 is allowed, every other address follows the production policy. */
+/** Test network: only the local servers' 127.0.0.1 is allowed, every other address is refused. */
 function testNetwork(table: Record<string, string> = {}): Network {
 	return { isAllowedAddress: (ip) => ip === "127.0.0.1", lookup: lookupFrom(table) };
 }
@@ -102,6 +102,11 @@ test("a redirect to ftp: gives invalid_url", async (t) => {
 		url: "ftp://example.com/file",
 		reason: "only http and https are read",
 	});
+});
+
+test("a Location that is not a URL gives invalid_url", async (t) => {
+	const s = await serve(t, (_req, res) => res.writeHead(302, { Location: "http://[" }).end());
+	assert.deepEqual(await failure(get(new URL(s.url), options(), testNetwork())), { kind: "invalid_url", url: "http://[", reason: "not a URL" });
 });
 
 test("a redirect to a refused address gives blocked_address, and that target receives no request", async (t) => {
@@ -217,6 +222,82 @@ test("the caller's abort gives aborted", async (t) => {
 test("a 404 gives http_status", async (t) => {
 	const s = await serve(t, (_req, res) => res.writeHead(404).end("missing"));
 	assert.deepEqual(await failure(get(new URL(`${s.url}/gone`), options(), testNetwork())), { kind: "http_status", status: 404, url: `${s.url}/gone` });
+});
+
+/** Sends the headers and a first chunk of a body that never ends; says whether the client drops the connection. */
+function stallAfterHeaders(res: ServerResponse, status: number, headers: Record<string, string> = {}): Promise<boolean> {
+	res.writeHead(status, headers);
+	res.write("the body never ends");
+	return new Promise((resolve) => {
+		const timer = setTimeout(() => resolve(false), 1000);
+		res.on("close", () => {
+			clearTimeout(timer);
+			resolve(true);
+		});
+	});
+}
+
+test("the body of a redirect is not read: the client drops that connection", async (t) => {
+	let dropped: Promise<boolean> | undefined;
+	const s = await serve(t, (req, res) => {
+		if (req.url === "/final") return void res.end("ok");
+		dropped = stallAfterHeaders(res, 302, { Location: "/final" });
+	});
+	await get(new URL(`${s.url}/start`), options({ timeoutMs: 10_000 }), testNetwork());
+	assert.equal(await dropped, true);
+});
+
+test("the body of an error status is not read: the client drops the connection", async (t) => {
+	let dropped: Promise<boolean> | undefined;
+	const s = await serve(t, (_req, res) => {
+		dropped = stallAfterHeaders(res, 404);
+	});
+	assert.equal((await failure(get(new URL(s.url), options({ timeoutMs: 10_000 }), testNetwork()))).kind, "http_status");
+	assert.equal(await dropped, true);
+});
+
+const refusedAfterHeaders: [string, Record<string, string>, Partial<GetOptions>, WebError][] = [
+	[
+		"a Content-Encoding it cannot decode",
+		{ "Content-Encoding": "zstd" },
+		{},
+		{ kind: "network", code: "unsupported_encoding", message: "the server sent Content-Encoding zstd" },
+	],
+	[
+		"a content type its limit function refuses",
+		{ "Content-Type": "application/x-nope" },
+		{
+			limitFor: () => {
+				throw new WebToolError({ kind: "unsupported_content_type", contentType: "application/x-nope" });
+			},
+		},
+		{ kind: "unsupported_content_type", contentType: "application/x-nope" },
+	],
+];
+
+for (const [name, headers, more, expected] of refusedAfterHeaders) {
+	test(`${name}: the client drops the connection`, async (t) => {
+		let dropped: Promise<boolean> | undefined;
+		const s = await serve(t, (_req, res) => {
+			dropped = stallAfterHeaders(res, 200, headers);
+		});
+		assert.deepEqual(await failure(get(new URL(s.url), options({ timeoutMs: 10_000, ...more }), testNetwork())), expected);
+		assert.equal(await dropped, true);
+	});
+}
+
+test("a connection refused on every address of a name says which addresses", async () => {
+	const probe = createServer();
+	await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", resolve));
+	const { port } = probe.address() as AddressInfo;
+	await new Promise((resolve) => probe.close(resolve));
+	const lookup = ((_hostname: string, _options: object, callback: (...args: unknown[]) => void) =>
+		callback(null, [
+			{ address: "::1", family: 6 },
+			{ address: "127.0.0.1", family: 4 },
+		])) as Network["lookup"];
+	const error = await failure(get(new URL(`http://dual.example:${port}/`), options(), { isAllowedAddress: () => true, lookup }));
+	assert.ok(error.kind === "network" && error.message.includes("::1") && error.message.includes("127.0.0.1"), JSON.stringify(error));
 });
 
 test("the server sees the generic User-Agent and neither Cookie nor Authorization", async (t) => {

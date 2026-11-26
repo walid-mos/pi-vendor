@@ -31,6 +31,8 @@ for (const [input, reason] of invalid) {
 const blocked: [string, string, string][] = [
 	["http://localhost:5175", "localhost", "127.0.0.1"],
 	["http://app.localhost/", "app.localhost", "127.0.0.1"],
+	["http://localhost./", "localhost", "127.0.0.1"],
+	["http://app.localhost./", "app.localhost", "127.0.0.1"],
 	["http://[::1]/", "::1", "::1"],
 	["http://2130706433/", "127.0.0.1", "127.0.0.1"],
 	["http://0x7f.1/", "127.0.0.1", "127.0.0.1"],

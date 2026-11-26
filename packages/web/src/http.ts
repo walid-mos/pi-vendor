@@ -74,7 +74,9 @@ async function follow(start: URL, options: GetOptions, network: Network, signal:
 		const status = res.statusCode ?? 0;
 		const location = res.headers.location;
 		if (REDIRECTS.has(status) && location) {
-			res.resume();
+			// A body that is never read is dropped with its connection: reading it would bypass the size limit.
+			res.destroy();
+			if (!URL.canParse(location, url)) throw new WebToolError({ kind: "invalid_url", url: location, reason: "not a URL" });
 			const next = new URL(location, url).href;
 			if (redirects.length === options.maxRedirects) {
 				throw new WebToolError({ kind: "too_many_redirects", limit: options.maxRedirects, chain: [...redirects, url.href, next] });
@@ -84,11 +86,11 @@ async function follow(start: URL, options: GetOptions, network: Network, signal:
 			continue;
 		}
 		if (status < 200 || status > 299) {
-			res.resume();
+			res.destroy();
 			throw new WebToolError({ kind: "http_status", status, url: url.href });
 		}
 		const contentType = res.headers["content-type"] ?? "";
-		const body = await readBody(res, options.limitFor(contentType)).catch((thrown: unknown) => {
+		const body = await readBody(res, contentType, options.limitFor).catch((thrown: unknown) => {
 			throw toWebToolError(thrown, url);
 		});
 		return { finalUrl: url.href, redirects, status, contentType, body };
@@ -137,22 +139,26 @@ function guardedLookup(network: Network): LookupFunction {
 	}) as LookupFunction;
 }
 
-async function readBody(res: IncomingMessage, limit: number): Promise<Buffer> {
-	const declared = Number(res.headers["content-length"]);
-	if (declared > limit) {
+/** The decompressed body, up to the limit chosen for its content type. Whenever this fails, the response is destroyed. */
+async function readBody(res: IncomingMessage, contentType: string, limitFor: GetOptions["limitFor"]): Promise<Buffer> {
+	try {
+		const limit = limitFor(contentType);
+		const declared = Number(res.headers["content-length"]);
+		if (declared > limit) throw new WebToolError({ kind: "too_large", limitBytes: limit });
+		const chunks: Buffer[] = [];
+		let size = 0;
+		await pipeline(res, ...decoders(res.headers["content-encoding"]), async (source: AsyncIterable<Buffer>) => {
+			for await (const chunk of source) {
+				size += chunk.length;
+				if (size > limit) throw new WebToolError({ kind: "too_large", limitBytes: limit });
+				chunks.push(chunk);
+			}
+		});
+		return Buffer.concat(chunks);
+	} catch (thrown) {
 		res.destroy();
-		throw new WebToolError({ kind: "too_large", limitBytes: limit });
+		throw thrown;
 	}
-	const chunks: Buffer[] = [];
-	let size = 0;
-	await pipeline(res, ...decoders(res.headers["content-encoding"]), async (source: AsyncIterable<Buffer>) => {
-		for await (const chunk of source) {
-			size += chunk.length;
-			if (size > limit) throw new WebToolError({ kind: "too_large", limitBytes: limit });
-			chunks.push(chunk);
-		}
-	});
-	return Buffer.concat(chunks);
 }
 
 function decoders(encoding: string | undefined) {
@@ -179,5 +185,11 @@ function toWebToolError(thrown: unknown, url: URL): unknown {
 	const code = (thrown as NodeJS.ErrnoException | undefined)?.code;
 	if (typeof code !== "string") return thrown;
 	if (DNS_CODES.has(code)) return new WebToolError({ kind: "dns_failed", host: url.hostname, code }, { cause: thrown });
-	return new WebToolError({ kind: "network", code, message: (thrown as Error).message }, { cause: thrown });
+	return new WebToolError({ kind: "network", code, message: messageOf(thrown) }, { cause: thrown });
+}
+
+/** A connection that failed on every address of a name is an AggregateError whose own message is empty. */
+function messageOf(thrown: unknown): string {
+	if (thrown instanceof AggregateError) return thrown.errors.map((error) => (error as Error).message).join("; ");
+	return (thrown as Error).message;
 }

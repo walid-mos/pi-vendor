@@ -42,12 +42,16 @@ export class WebToolError extends Error {
 
 const BOUNDARY = "Local and private pages are opened with e2e instead.";
 
-/** A server's text reaches the model inside these sentences; past this length it is cut, and the cut is stated. */
+/**
+ * A server's text reaches the model inside these sentences; past this length it is cut, and the cut is stated. That
+ * includes what a redirect's Location puts into a URL or a host name.
+ */
 const MAX_SERVER_TEXT = 500;
 
 function fromServer(text: string): string {
 	if (text.length <= MAX_SERVER_TEXT) return text;
-	return `${text.slice(0, MAX_SERVER_TEXT)}… (${text.length - MAX_SERVER_TEXT} more characters)`;
+	// The cut can fall inside a surrogate pair; its lone half would be invalid text for the model's API.
+	return `${text.slice(0, MAX_SERVER_TEXT).toWellFormed()}… (${text.length - MAX_SERVER_TEXT} more characters)`;
 }
 
 /** A free-text field that is followed by a full stop of ours: its own final full stop would double it. */
@@ -76,11 +80,11 @@ export function describe(error: WebError): string {
 		case "bad_response":
 			return `Unexpected reply from ${error.from}: ${withoutFinalStop(error.what)}.`;
 		case "invalid_url":
-			return `Invalid URL ${error.url}: ${withoutFinalStop(error.reason)}.`;
+			return `Invalid URL ${fromServer(error.url)}: ${withoutFinalStop(error.reason)}.`;
 		case "blocked_address":
-			return `${error.host} resolves to ${error.address}, a local or private address, which fetch_content does not open. ${BOUNDARY}`;
+			return `${fromServer(error.host)} resolves to ${error.address}, a local or private address, which fetch_content does not open. ${BOUNDARY}`;
 		case "dns_failed":
-			return `Could not resolve ${error.host} (${error.code}).`;
+			return `Could not resolve ${fromServer(error.host)} (${error.code}).`;
 		case "network":
 			return `Network error (${error.code}): ${fromServer(error.message)}`;
 		case "timeout":
@@ -88,9 +92,9 @@ export function describe(error: WebError): string {
 		case "aborted":
 			return "Aborted.";
 		case "too_many_redirects":
-			return `More than ${error.limit} redirects: ${error.chain.join(" -> ")}`;
+			return `More than ${error.limit} redirects: ${fromServer(error.chain.join(" -> "))}`;
 		case "http_status":
-			return `HTTP ${error.status} from ${error.url}.`;
+			return `HTTP ${error.status} from ${fromServer(error.url)}.`;
 		case "too_large":
 			return `The response is larger than ${error.limitBytes} bytes, the limit for its type; nothing was returned.`;
 		case "unsupported_content_type":
@@ -110,7 +114,7 @@ export function describe(error: WebError): string {
 		case "no_metadata":
 			return `${error.url} exposes no title or description without JavaScript or a login. Its content needs e2e, with an agent account.`;
 		case "media_host_blocked":
-			return `Media host ${error.host} is not allowed.`;
+			return `Media host ${fromServer(error.host)} is not allowed.`;
 		case "unsupported_media_type":
 			return `Media type ${error.mimeType} is not an image that can be attached.`;
 		case "image_undecodable":

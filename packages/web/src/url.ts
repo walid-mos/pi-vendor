@@ -8,7 +8,6 @@ import { isIP } from "node:net";
 import { isPublicAddress } from "./address.ts";
 import { WebToolError } from "./errors.ts";
 
-/** `localhost` and its subdomains are loopback by definition (RFC 6761), whatever DNS would say. */
 const LOOPBACK = "127.0.0.1";
 
 /** `isAllowed` is the address policy: public addresses only, except in tests of the HTTP client. */
@@ -22,7 +21,9 @@ export function parseTarget(input: string, isAllowed: (ip: string) => boolean = 
 	if (url.username || url.password) {
 		throw new WebToolError({ kind: "invalid_url", url: input, reason: "a URL with a user name or password is refused" });
 	}
-	const host = url.hostname.replace(/^\[(.*)\]$/, "$1");
+	// Without the brackets of an IPv6 literal and the final dot of a fully qualified name (`localhost.`).
+	const host = url.hostname.replace(/^\[(.*)\]$/, "$1").replace(/\.$/, "");
+	// `localhost` and its subdomains are loopback by definition (RFC 6761), whatever DNS would say.
 	if ((host === "localhost" || host.endsWith(".localhost")) && !isAllowed(LOOPBACK)) {
 		throw new WebToolError({ kind: "blocked_address", host, address: LOOPBACK });
 	}
