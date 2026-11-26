@@ -18,6 +18,7 @@ packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnp
 
 | Dir | Upstream | Version |
 |---|---|---|
+| `web` | ours (`source: own`): the tools `web_search` and `fetch_content`, with `@mozilla/readability`, `linkedom`, `turndown` and `unpdf` vendored | `package.json` and `pnpm-lock.yaml` |
 | `infisical-ai-skills` | [`Infisical/ai-skills`](https://github.com/Infisical/ai-skills) (git, MIT): only `infisical-self-host`, `infisical-access-control`, `infisical-setup` | commit `4bd1270` |
 
 The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no provider extension is needed.
@@ -38,6 +39,9 @@ No script: upstream changes are followed through GitHub's per-path commit feeds,
 - `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-setup.atom`
 - `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-self-host.atom`
 - `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-access-control.atom`
+
+- `https://github.com/unjs/unpdf/releases.atom` (`web`: its bundled pdf.js parses untrusted files)
+- `https://github.com/FxEmbed/FxEmbed/commits/main/src/realms/api.atom` (`web`: FxTwitter's API, an external service `fetch_content` depends on)
 
 When a vendored package is added or removed, update this list.
 

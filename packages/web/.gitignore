@@ -1,0 +1,5 @@
+# pnpm's machine-local metadata; the packages under node_modules/ are committed
+node_modules/.bin/
+node_modules/.pnpm/
+node_modules/.modules.yaml
+node_modules/.pnpm-workspace-state-v1.json

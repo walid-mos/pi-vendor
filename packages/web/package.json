@@ -1,0 +1,11 @@
+{
+  "name": "pi-web",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@mozilla/readability": "0.6.0",
+    "linkedom": "0.18.15",
+    "turndown": "7.2.5",
+    "unpdf": "2.2.2"
+  }
+}
