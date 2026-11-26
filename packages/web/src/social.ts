@@ -19,8 +19,7 @@ export type SocialMeta = {
 export function socialMeta(html: string, url: string, site: SocialSite): SocialMeta {
 	const { document } = parseHTML(html);
 	const og = (name: string): string | undefined => {
-		const value = document.querySelector(`meta[property="og:${name}"]`)?.getAttribute("content")?.trim();
-		return value ? value : undefined;
+		return document.querySelector(`meta[property="og:${name}"]`)?.getAttribute("content")?.trim() || undefined;
 	};
 	const meta: SocialMeta = { site, title: og("title"), description: og("description"), imageUrl: og("image") };
 	if (!meta.title && !meta.description) throw new WebToolError({ kind: "no_metadata", url, site });

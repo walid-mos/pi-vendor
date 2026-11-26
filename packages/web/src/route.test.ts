@@ -10,6 +10,9 @@ const table: [string, Route][] = [
 	["https://fxtwitter.com/jack/status/20", { kind: "x_status", id: "20" }],
 	["https://vxtwitter.com/i/status/1604617643973124097", { kind: "x_status", id: "1604617643973124097" }],
 	["https://www.x.com/NASA/status/2125263043244290435/photo/1", { kind: "x_status", id: "2125263043244290435" }],
+	// The final dot of a fully qualified name is the same host.
+	["https://x.com./jack/status/20", { kind: "x_status", id: "20" }],
+	["https://www.instagram.com./p/abc/", { kind: "social_meta", site: "instagram" }],
 	["https://x.com/jack", { kind: "generic" }],
 	["https://x.com/jack/status/abc", { kind: "generic" }],
 	["https://x.com.evil.example/a/status/1", { kind: "generic" }],

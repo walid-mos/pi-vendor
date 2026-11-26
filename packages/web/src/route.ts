@@ -23,7 +23,8 @@ const SOCIAL_HOSTS: Record<string, SocialSite> = {
 };
 
 export function routeFor(url: URL): Route {
-	const host = url.hostname.toLowerCase().replace(/^(?:www|m|mobile)\./, "");
+	// Without the final dot of a fully qualified name (`x.com.`), as `url.ts` does, and without a `www.`-style prefix.
+	const host = url.hostname.toLowerCase().replace(/\.$/, "").replace(/^(?:www|m|mobile)\./, "");
 	if (X_HOSTS.has(host)) {
 		const id = X_STATUS_PATH.exec(url.pathname)?.[1];
 		return id ? { kind: "x_status", id } : { kind: "generic" };
