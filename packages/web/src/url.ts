@@ -11,7 +11,8 @@ import { WebToolError } from "./errors.ts";
 /** `localhost` and its subdomains are loopback by definition (RFC 6761), whatever DNS would say. */
 const LOOPBACK = "127.0.0.1";
 
-export function parseTarget(input: string): URL {
+/** `isAllowed` is the address policy: public addresses only, except in tests of the HTTP client. */
+export function parseTarget(input: string, isAllowed: (ip: string) => boolean = isPublicAddress): URL {
 	const trimmed = input.trim();
 	if (!URL.canParse(trimmed)) throw new WebToolError({ kind: "invalid_url", url: input, reason: "not a URL" });
 	const url = new URL(trimmed);
@@ -22,9 +23,9 @@ export function parseTarget(input: string): URL {
 		throw new WebToolError({ kind: "invalid_url", url: input, reason: "a URL with a user name or password is refused" });
 	}
 	const host = url.hostname.replace(/^\[(.*)\]$/, "$1");
-	if (host === "localhost" || host.endsWith(".localhost")) {
+	if ((host === "localhost" || host.endsWith(".localhost")) && !isAllowed(LOOPBACK)) {
 		throw new WebToolError({ kind: "blocked_address", host, address: LOOPBACK });
 	}
-	if (isIP(host) && !isPublicAddress(host)) throw new WebToolError({ kind: "blocked_address", host, address: host });
+	if (isIP(host) && !isAllowed(host)) throw new WebToolError({ kind: "blocked_address", host, address: host });
 	return url;
 }
