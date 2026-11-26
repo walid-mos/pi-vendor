@@ -86,6 +86,11 @@ test("a page that leaves out <html>, <head> and <body> keeps its content", () =>
 	assert.match(markdown, /Bare page text\./);
 });
 
+test("a page with <html> and <head> but no <body> keeps its title and language, and the title is not read as text", () => {
+	const html = '<!doctype html><html lang="fr"><head><title>Le titre</title></head><p>Bonjour tout le monde.</p></html>';
+	assert.deepEqual(extract(html, BASE, "page"), { markdown: "Bonjour tout le monde.", title: "Le titre", lang: "fr" });
+});
+
 test("links are resolved against the page's <base href>", () => {
 	const html = fixture("article.html")
 		.replace("<head>", '<head><base href="/assets/">')

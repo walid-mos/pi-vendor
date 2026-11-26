@@ -45,13 +45,20 @@ export function extract(html: string, baseUrl: string, mode: "article" | "page")
 
 /**
  * linkedom builds the tree as written, without the <html> and <body> that HTML's rules imply: `document.body` of a page
- * that leaves them out is an empty one it makes up, and an empty input has no root at all. Such a page is parsed again
- * inside a <body>.
+ * that leaves them out is an empty one it makes up, and an empty input has no root at all. A page with no <html> is
+ * parsed again inside a <body>; one with an <html> but no <body> gets the <body> that everything outside its <head>
+ * belongs to, so that its title and language stay where they are read from.
  */
 function parse(html: string): Document {
 	const { document } = parseHTML(html);
-	const hasBody = document.documentElement?.tagName === "HTML" && Array.from(document.documentElement.children).some((child) => child.tagName === "BODY");
-	return hasBody ? document : parseHTML(`<html><body>${html}</body></html>`).document;
+	const root = document.documentElement;
+	if (root?.tagName !== "HTML") return parseHTML(`<html><body>${html}</body></html>`).document;
+	if (!Array.from(root.children).some((child) => child.tagName === "BODY")) {
+		const body = document.createElement("body");
+		for (const node of Array.from(root.childNodes)) if (node.nodeName !== "HEAD") body.append(node);
+		root.append(body);
+	}
+	return document;
 }
 
 /** What the page's relative links are resolved against: its <base href> when it has a usable one, else its own URL. */
