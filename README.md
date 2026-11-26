@@ -8,7 +8,7 @@ Pi loads each package from this checkout as a local package, so nothing is fetch
 
 ```
 vendor.json          # source, pinned version or commit, integrity and review notes for each package
-packages/<dir>/      # upstream contents (npm tarball, or the listed paths of a git commit) with patches/<dir> applied, never edited by hand
+packages/<dir>/      # upstream contents (an npm tarball or a git commit, only the entry's paths when it lists some) with patches/<dir> applied, never edited by hand
 patches/<dir>/       # local changes, applied on top of packages/<dir> after each update
 packages/web/        # our own Pi package: code edited here, test first; node_modules/ vendored from its lockfile and committed
 packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnpm-lock.yaml committed, node_modules/ installed by the dotfiles
@@ -20,7 +20,7 @@ packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnp
 |---|---|---|
 | `web` | ours (`source: own`): the tools `web_search` and `fetch_content`, with `@mozilla/readability`, `linkedom`, `turndown` and `unpdf` vendored | `package.json` and `pnpm-lock.yaml` |
 | `web-tools` | ours (`source: own`), not loaded by Pi: e2e, `@e2e-dev/web` and chrome-devtools-mcp, pinned; `node_modules` installed by the dotfiles | `package.json` and `pnpm-lock.yaml` |
-| `e2e` | [`e2e`](https://www.npmjs.com/package/e2e) (npm, Apache-2.0): only the skill `skills/e2e`, with `LICENSE` and `NOTICE` | the `e2e` version of `packages/web-tools` |
+| `e2e` | [`e2e`](https://www.npmjs.com/package/e2e) (npm, Apache-2.0): only the skill `e2e` | the `e2e` version of `packages/web-tools` |
 | `infisical-ai-skills` | [`Infisical/ai-skills`](https://github.com/Infisical/ai-skills) (git, MIT): only `infisical-self-host`, `infisical-access-control`, `infisical-setup` | commit `4bd1270` |
 
 The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no provider extension is needed.
@@ -47,9 +47,6 @@ No script: upstream changes are followed through GitHub's per-path commit feeds,
 - `https://github.com/e2e-inc/e2e/releases.atom` (`web-tools`: e2e and its web engine, and the vendored skill `e2e`)
 - `https://github.com/ChromeDevTools/chrome-devtools-mcp/releases.atom` (`web-tools`: the `chrome` MCP server)
 
-The vendored `e2e` skill documents the `e2e` binary of `packages/web-tools`: its version is always that binary's
-(`e2e --version`), so one commit updates both.
-
 When a vendored package is added or removed, update this list.
 
 ## Update a package
@@ -60,14 +57,15 @@ Updates are always manual and reviewed:
 2. Check that the tarball's sha512 matches `npm view <name>@<version> dist.integrity`.
 3. Diff the new contents against `packages/<dir>/` and review: new network calls, new dependencies, install scripts, files read or written.
 4. Check compatibility with the installed Pi version (APIs used, `peerDependencies`, changelog).
-5. Replace `packages/<dir>/`, reapply `patches/<dir>/*.patch`, update `vendor.json`.
+5. Replace `packages/<dir>/` (with only the entry's `paths` when it lists some, then record the content hash with its
+   `contentSha256Method`), reapply `patches/<dir>/*.patch`, update `vendor.json`.
 6. Test with `pi --list-models` and, for providers, `pi auth check --provider <id>`.
-7. Commit one package update per commit.
+7. Commit one package update per commit. The vendored `e2e` skill documents the `e2e` binary of `packages/web-tools`:
+   its version is always that binary's (`e2e --version`), so one commit updates both.
 
 For a package taken from a git repository (`"source": "git"` in `vendor.json`), replace steps 1 and 2: clone into an
-empty temporary directory, check out the pinned commit, copy only the listed `paths`, and record the git tree IDs and
-the content hash (`contentSha256Method`). Skills are not run by Pi: review their scripts and the commands they tell
-the agent to run.
+empty temporary directory, check out the pinned commit, and record the git tree IDs of the listed `paths`. Skills are
+not run by Pi: review their scripts and the commands they tell the agent to run.
 
 ## Limitation
 
