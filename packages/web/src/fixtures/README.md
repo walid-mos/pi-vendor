@@ -10,3 +10,8 @@ Public data only. The HTML pages are written for the tests. The PDFs are made on
 
 The Instagram, Threads and TikTok pages are public pages fetched on 2026-11-26 with a plain GET, trimmed to the
 `<title>` and `og:` tags of their `<head>`, with the signature query strings of their image URLs removed.
+
+`x/` holds FxTwitter replies (`/2/thread/<id>`, `/2/conversation/<id>`) for public posts of well-known accounts,
+recorded on 2026-11-26. Three are edited by hand, because no public post has their shape: `thread-quotes-5.json` nests
+real posts five quotes deep under made-up IDs, `thread-note.json` adds a community note, and `thread-12.json` repeats
+one post as a thread of twelve.
