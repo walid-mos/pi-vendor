@@ -188,7 +188,8 @@ async function readGeneric(deps: WebToolsDeps, url: URL, mode: "article" | "page
 
 	if (isPdfType(fetched.contentType) || (mime === "application/octet-stream" && fetched.body.subarray(0, 5).toString("latin1") === "%PDF-")) {
 		const pdf = await extractPdf(fetched.body, { maxPages: MAX_PDF_PAGES, timeoutMs: PDF_TIMEOUT_MS, signal });
-		const header = [pdf.title ? `# ${pdf.title}` : undefined, source, pdf.author ? `By ${pdf.author}` : undefined].filter(Boolean).join("\n");
+		const pages = `PDF, ${pdf.pagesTotal} ${pdf.pagesTotal === 1 ? "page" : "pages"}`;
+		const header = [pdf.title ? `# ${pdf.title}` : undefined, source, pdf.author ? `By ${pdf.author}` : undefined, pages].filter(Boolean).join("\n");
 		const capped = await capText(`${header}\n\n${pdf.text}`, deps.outputLimits);
 		return {
 			content: [{ type: "text", text: capped.text }],

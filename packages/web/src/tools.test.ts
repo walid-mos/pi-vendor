@@ -146,6 +146,7 @@ test("a PDF returns its sentences and both page counts, also when served as octe
 		assert.equal(result.details.kind, "pdf", path);
 		assert.match(text(result), /The first page says the harbour opens at dawn\./);
 		assert.deepEqual([result.details.pagesTotal, result.details.pagesExtracted], [2, 2]);
+		assert.match(text(result), /^PDF, 2 pages$/m, "the model reads the page count too");
 		assert.equal(result.details.title, "Harbour Notes");
 	}
 	const blob = await run(deps(), "fetch_content", { url: `${s.origin}/blob` });
