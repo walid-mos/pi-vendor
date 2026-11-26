@@ -36,6 +36,13 @@ test("a failure uses the error role and the describe text", () => {
 	assert.equal(renderFetchResult(failed, true, theme), "<error>Magpie's web search failed: SearXNG: connection refused. Nothing else is tried.</error>");
 });
 
+test("a call that threw has empty details, not an error: its message is shown in the error role", () => {
+	// What Pi builds for an abort, for arguments it rejects, or for a bug in a tool: the message is the content.
+	const threw = { content: [{ type: "text" as const, text: "Operation aborted" }], details: {} as never };
+	assert.equal(renderSearchResult(threw, false, theme), "<error>Operation aborted</error>");
+	assert.equal(renderFetchResult(threw, false, theme), "<error>Operation aborted</error>");
+});
+
 test("the fetch call shows the URL and the options", () => {
 	assert.equal(renderFetchCall({ url: "https://x.com/jack/status/20", replies: true }, theme), "<toolTitle>**Fetch content**</toolTitle> <accent>https://x.com/jack/status/20</accent> <muted>with replies</muted>");
 	assert.equal(renderFetchCall({ url: "https://example.com/", mode: "page" }, theme), "<toolTitle>**Fetch content**</toolTitle> <accent>https://example.com/</accent> <muted>whole page</muted>");

@@ -4,7 +4,7 @@
  * result is one `muted` line; an expanded one is the text in `toolOutput`; a failure is its sentence in `error`.
  */
 
-import { describe } from "./errors.ts";
+import { describe, type WebError } from "./errors.ts";
 import type { FetchDetails, SearchDetails } from "./tools.ts";
 
 export type Role = "toolTitle" | "accent" | "muted" | "toolOutput" | "error";
@@ -31,7 +31,7 @@ export function renderFetchCall(args: { url?: string; mode?: "article" | "page";
 export function renderSearchResult(result: Rendered<SearchDetails>, expanded: boolean, theme: Theme): string {
 	const details = result.details;
 	if (!details) return theme.fg("muted", "…");
-	if (!details.ok) return theme.fg("error", describe(details.error));
+	if (!details.ok) return theme.fg("error", failureText(details.error, result));
 	const text = textOf(result);
 	return expanded ? theme.fg("toolOutput", text) : theme.fg("muted", text.split("\n")[0]);
 }
@@ -39,7 +39,7 @@ export function renderSearchResult(result: Rendered<SearchDetails>, expanded: bo
 export function renderFetchResult(result: Rendered<FetchDetails>, expanded: boolean, theme: Theme): string {
 	const details = result.details;
 	if (!details) return theme.fg("muted", "…");
-	if (!details.ok) return theme.fg("error", describe(details.error));
+	if (!details.ok) return theme.fg("error", failureText(details.error, result));
 	if (expanded) {
 		const lines = textOf(result).split("\n");
 		const shown = theme.fg("toolOutput", lines.slice(0, EXPANDED_LINES).join("\n"));
@@ -63,6 +63,11 @@ export function renderFetchResult(result: Rendered<FetchDetails>, expanded: bool
 		case "social_meta":
 			return theme.fg("muted", [details.meta.site, details.meta.title, "metadata only"].filter(Boolean).join(" · "));
 	}
+}
+
+/** Pi builds the result of a call that threw (an abort, rejected arguments, a bug) with empty details: its message is the content. */
+function failureText(error: WebError | undefined, result: Rendered<unknown>): string {
+	return error ? describe(error) : textOf(result);
 }
 
 function callLine(label: string, target: string, options: string[], theme: Theme): string {
