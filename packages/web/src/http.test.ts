@@ -310,3 +310,13 @@ test("the server sees the generic User-Agent and neither Cookie nor Authorizatio
 		assert.equal(req.headers.authorization, undefined);
 	}
 });
+
+test("with httpsOnly, an http: URL gives invalid_url, and it receives no request", async (t) => {
+	const plain = await serve(t, (_req, res) => res.end("image"));
+	assert.deepEqual(await failure(get(new URL(`${plain.url}/a.png`), options({ httpsOnly: true }), testNetwork())), {
+		kind: "invalid_url",
+		url: `${plain.url}/a.png`,
+		reason: "only https is read here",
+	});
+	assert.equal(plain.connections(), 0);
+});

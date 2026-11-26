@@ -41,6 +41,8 @@ export type GetOptions = {
 	signal?: AbortSignal;
 	/** When set, every hop's host must pass it (the media hosts of X posts). */
 	allowHost?: (host: string) => boolean;
+	/** Every hop must be https (media). */
+	httpsOnly?: boolean;
 };
 
 export type Fetched = {
@@ -100,6 +102,7 @@ async function follow(start: URL, options: GetOptions, network: Network, signal:
 /** Scheme, credentials and IP-literal hosts (which no lookup sees), then the host allowlist, before any request. */
 function checkHop(href: string, options: GetOptions, network: Network): URL {
 	const url = parseTarget(href, network.isAllowedAddress);
+	if (options.httpsOnly && url.protocol !== "https:") throw new WebToolError({ kind: "invalid_url", url: href, reason: "only https is read here" });
 	if (options.allowHost && !options.allowHost(url.hostname)) {
 		throw new WebToolError({ kind: "media_host_blocked", host: url.hostname });
 	}
