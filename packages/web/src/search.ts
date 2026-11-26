@@ -48,6 +48,8 @@ export async function search(params: SearchParams, gateway: Gateway, deps: { tim
 				"User-Agent": USER_AGENT,
 			},
 			body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "web_search", arguments: args } }),
+			// The gateway answers itself: a redirect would send the query, and maybe the key, elsewhere.
+			redirect: "manual",
 			signal,
 		});
 		status = res.status;

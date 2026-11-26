@@ -186,3 +186,15 @@ test("a name that fails on every one of its addresses gives network with their m
 	assert.equal(error.kind, "network");
 	assert.match((error as { message: string }).message, /ECONNREFUSED/);
 });
+
+test("a redirect from the gateway is not followed: gateway_refused with its status, and the target receives nothing", async (t) => {
+	const target = await magpie(t, { body: fixture("magpie-search-ok.json") });
+	const redirecting = createServer((_req, res) => res.writeHead(307, { Location: target.gateway.url }).end());
+	await new Promise<void>((resolve) => redirecting.listen(0, "127.0.0.1", resolve));
+	t.after(() => redirecting.close());
+	const { port } = redirecting.address() as AddressInfo;
+	const error = await failure(search({ query: "tides" }, { url: `http://127.0.0.1:${port}/mcp/magpie/web-search`, key: "sk-test-key" }, deps));
+	assert.equal(error.kind, "gateway_refused");
+	assert.equal((error as { status: number }).status, 307);
+	assert.equal(target.recorded.length, 0);
+});
