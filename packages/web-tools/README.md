@@ -6,7 +6,7 @@ is the page a session opens on.
 
 ## Versions
 
-`package.json` pins the three tools exactly; `pnpm-lock.yaml` fixes the whole tree and is the only place their
+`package.json` pins the tools exactly; `pnpm-lock.yaml` fixes the whole tree and is the only place their
 versions are written. `pnpm-workspace.yaml` decides what dependencies may do (build scripts, agent skills), so no
 install asks or approves by itself.
 
