@@ -1,5 +1,5 @@
 {
-  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents. source=git: packages/<dir> holds only the listed paths at the pinned commit. Local changes to upstream packages live in patches/<dir>/*.patch. source=own: our own package, its code edited in packages/<dir> directly. Its entry records its direct dependency pins and either each vendored dependency (direct and transitive) with its version and lockfile integrity, when node_modules is committed (web), or the lockfile as the integrity record, when node_modules is installed by the dotfiles (web-tools).",
+  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents, or only its listed paths when the entry has paths. source=git: packages/<dir> holds only the listed paths at the pinned commit. Local changes to upstream packages live in patches/<dir>/*.patch. source=own: our own package, its code edited in packages/<dir> directly. Its entry records its direct dependency pins and either each vendored dependency (direct and transitive) with its version and lockfile integrity, when node_modules is committed (web), or the lockfile as the integrity record, when node_modules is installed by the dotfiles (web-tools).",
   "packages": {
     "infisical-ai-skills": {
       "source": "git",
@@ -87,6 +87,26 @@
       "vendoredAt": "2026-11-26",
       "testedWithPi": "1.6.0",
       "review": "Tree: 50 packages, licenses Apache-2.0, MIT, ISC, (AFL-2.1 OR BSD-3-Clause); no install, preinstall or postinstall script (chrome-devtools-mcp has a prepare script, which a registry install never runs); pnpm reports no build script awaiting approval. Agent skills offered by e2e and chrome-devtools-mcp are denied in pnpm-workspace.yaml (the e2e skill is vendored and reviewed in packages/e2e). Network calls made by themselves: e2e telemetry to eu.i.posthog.com and its npm latest-version check (only on a terminal), both off with E2E_TELEMETRY_DISABLED=1 in mcp.json; chrome-devtools-mcp usage statistics (play.googleapis.com/log) off with --no-usage-statistics, CrUX lookups (chromeuxreport.googleapis.com) off with --no-performance-crux, and its daily npm latest-version check off with CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS=1 in mcp.json; browsers are downloaded only by e2e-web install. Files written outside the run directory: e2e its preferences under ~/.config/e2e, Playwright its browsers under ~/Library/Caches/ms-playwright; chrome-devtools-mcp ~/.cache/chrome-devtools-mcp only for its update check and for a profile when it launches a browser itself, which our launcher never makes it do (--browserUrl)."
+    },
+    "e2e": {
+      "source": "npm",
+      "name": "e2e",
+      "version": "0.25.0",
+      "paths": [
+        "skills/e2e",
+        "LICENSE",
+        "NOTICE"
+      ],
+      "integrity": {
+        "tarball": "sha512-/FwatKZHyuguwJia4zqLLLjJuSJ0gYYLyJT3w+3oWQXvYhA/fXH/GAqxhkqemgD9pPYQ8+zgoInI/cTNost76w==",
+        "contentSha256": "c83485a570166dbd7765c3cf30341eaeb1f14d4c170b743db9018ca02e932cd1",
+        "contentSha256Method": "cd packages/e2e && find . -type f | sort | xargs shasum -a 256 | shasum -a 256"
+      },
+      "license": "Apache-2.0",
+      "vendoredAt": "2026-11-26",
+      "testedWithPi": "1.6.0",
+      "patches": [],
+      "review": "Only the skill (SKILL.md and its 8 references), the LICENSE and the NOTICE, which Apache-2.0 requires to travel with a redistribution. Tarball sha512 equals npm's dist.integrity and the e2e integrity in packages/web-tools/pnpm-lock.yaml: the skill documents the pinned binary. The skill tells the agent to run npx e2e (guide, run, doctor), npx e2e@latest upgrade, e2e init (writes a config, .mcp.json, AGENTS.md, CLAUDE.md and skills into a project), npm install --save-dev e2e, npx e2e login <provider> (model OAuth saved under ~/.config/e2e), engine sessions without a config, and npx e2e feedback (sends a report, after --dry-run and the user's consent); it documents E2E_TELEMETRY_DISABLED. Our skill web takes precedence: the pinned e2e command, no npx or @latest, no init in a repository, no engine session. Description 681 characters, name e2e: no patch. harness check.sh reports references/explore.md (142 lines) without a Contents heading: upstream style, left unedited like every vendored file."
     }
   }
 }

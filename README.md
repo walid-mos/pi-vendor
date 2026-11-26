@@ -20,6 +20,7 @@ packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnp
 |---|---|---|
 | `web` | ours (`source: own`): the tools `web_search` and `fetch_content`, with `@mozilla/readability`, `linkedom`, `turndown` and `unpdf` vendored | `package.json` and `pnpm-lock.yaml` |
 | `web-tools` | ours (`source: own`), not loaded by Pi: e2e, `@e2e-dev/web` and chrome-devtools-mcp, pinned; `node_modules` installed by the dotfiles | `package.json` and `pnpm-lock.yaml` |
+| `e2e` | [`e2e`](https://www.npmjs.com/package/e2e) (npm, Apache-2.0): only the skill `skills/e2e`, with `LICENSE` and `NOTICE` | the `e2e` version of `packages/web-tools` |
 | `infisical-ai-skills` | [`Infisical/ai-skills`](https://github.com/Infisical/ai-skills) (git, MIT): only `infisical-self-host`, `infisical-access-control`, `infisical-setup` | commit `4bd1270` |
 
 The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no provider extension is needed.
@@ -45,6 +46,9 @@ No script: upstream changes are followed through GitHub's per-path commit feeds,
 - `https://github.com/FxEmbed/FxEmbed/commits/main/src/realms/api.atom` (`web`: FxTwitter's API, an external service `fetch_content` depends on)
 - `https://github.com/e2e-inc/e2e/releases.atom` (`web-tools`: e2e and its web engine, and the vendored skill `e2e`)
 - `https://github.com/ChromeDevTools/chrome-devtools-mcp/releases.atom` (`web-tools`: the `chrome` MCP server)
+
+The vendored `e2e` skill documents the `e2e` binary of `packages/web-tools`: its version is always that binary's
+(`e2e --version`), so one commit updates both.
 
 When a vendored package is added or removed, update this list.
 
