@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { describe, type WebError } from "./errors.ts";
+import { describe, type WebError, WebToolError } from "./errors.ts";
 
 test("gateway_missing names the magpie provider and the file to fix", () => {
 	const baseUrl = describe({ kind: "gateway_missing", what: "baseUrl" });
@@ -94,3 +94,8 @@ for (const error of fromServers) {
 		assert.match(text, /1500 more characters/);
 	});
 }
+
+test("WebToolError keeps the error it was caught from as its cause", () => {
+	const cause = Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });
+	assert.equal(new WebToolError({ kind: "network", code: "ECONNRESET", message: cause.message }, { cause }).cause, cause);
+});

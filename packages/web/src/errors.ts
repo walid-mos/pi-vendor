@@ -32,8 +32,9 @@ export type WebError =
 export class WebToolError extends Error {
 	readonly error: WebError;
 
-	constructor(error: WebError) {
-		super(describe(error));
+	/** `options.cause` is the exception this error was caught from, when there is one. */
+	constructor(error: WebError, options?: ErrorOptions) {
+		super(describe(error), options);
 		this.name = "WebToolError";
 		this.error = error;
 	}
