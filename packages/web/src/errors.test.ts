@@ -49,3 +49,48 @@ test("pdf_no_text says there is no OCR", () => {
 test("an unknown kind is a bug, not a sentence", () => {
 	assert.throws(() => describe({ kind: "nope" } as unknown as WebError), /unknown web error kind "nope"/);
 });
+
+test("pdf_no_text does not say '1 pages' for a one-page PDF", () => {
+	const text = describe({ kind: "pdf_no_text", pages: 1 });
+	assert.doesNotMatch(text, /1 pages/);
+	assert.match(text, /no OCR/);
+});
+
+test("gateway_missing with a field that is neither baseUrl nor key is a bug, not the key sentence", () => {
+	assert.throws(() => describe({ kind: "gateway_missing", what: "nope" } as unknown as WebError), /unknown gateway_missing what "nope"/);
+});
+
+const endsWithFullStop: WebError[] = [
+	{ kind: "search_failed", message: "SearXNG: connection refused." },
+	{ kind: "bad_response", from: "magpie", what: "no result list." },
+	{ kind: "invalid_url", url: "ftp://example.com/", reason: "only http and https are read." },
+	{ kind: "option_not_supported", option: "replies", reason: "the host does not expose them." },
+	{ kind: "pdf_unreadable", reason: "Invalid PDF structure." },
+];
+
+for (const error of endsWithFullStop) {
+	test(`${error.kind} does not double the full stop that ends a free-text field`, () => {
+		assert.doesNotMatch(describe(error), /\.\./);
+	});
+}
+
+// A server's text reaches the model inside these sentences: a long one is cut, and the cut is stated.
+const long = "x".repeat(2000);
+const fromServers: WebError[] = [
+	{ kind: "gateway_refused", status: 500, message: long },
+	{ kind: "search_failed", message: long },
+	{ kind: "network", code: "ECONNRESET", message: long },
+	{ kind: "x_unavailable", code: 500, message: long },
+	{ kind: "pdf_unreadable", reason: long },
+	{ kind: "unsupported_content_type", contentType: long },
+	{ kind: "unsupported_charset", charset: long },
+];
+
+for (const error of fromServers) {
+	test(`${error.kind} cuts a server's long text to 500 characters and says so`, () => {
+		const text = describe(error);
+		assert.ok(text.includes("x".repeat(500)), "keeps the first 500 characters");
+		assert.ok(!text.includes("x".repeat(501)), "drops the rest");
+		assert.match(text, /1500 more characters/);
+	});
+}
