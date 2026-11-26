@@ -1,6 +1,6 @@
 # pi-vendor
 
-Vendored third-party [Pi](https://github.com/earendil-works/pi) packages, reviewed and pinned.
+[Pi](https://github.com/earendil-works/pi) packages, reviewed and pinned: vendored third-party packages, and two packages of our own (`web`, `web-tools`) whose code is edited here.
 
 Pi loads each package from this checkout as a local package, so nothing is fetched from npm at runtime and nothing changes without a reviewed commit here.
 
@@ -10,6 +10,8 @@ Pi loads each package from this checkout as a local package, so nothing is fetch
 vendor.json          # source, pinned version or commit, integrity and review notes for each package
 packages/<dir>/      # upstream contents (npm tarball, or the listed paths of a git commit) with patches/<dir> applied, never edited by hand
 patches/<dir>/       # local changes, applied on top of packages/<dir> after each update
+packages/web/        # our own Pi package: code edited here, test first; node_modules/ vendored from its lockfile and committed
+packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnpm-lock.yaml committed, node_modules/ installed by the dotfiles
 ```
 
 ## Packages
@@ -58,4 +60,7 @@ the agent to run.
 
 ## Limitation
 
-Pi does not install dependencies for local packages. A package with runtime `dependencies` must have its `node_modules` vendored from a lockfile.
+Pi does not install dependencies for local packages. A package Pi loads that has runtime `dependencies` must have its
+`node_modules` vendored from a lockfile and committed (`packages/web`). Tooling that Pi does not load
+(`packages/web-tools`) commits only its lockfile, and the dotfiles install its `node_modules` from it. How to update
+the dependencies of one of our own packages is in its README.

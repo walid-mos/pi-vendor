@@ -1,5 +1,5 @@
 {
-  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents. source=git: packages/<dir> holds only the listed paths at the pinned commit. Local changes to upstream packages live in patches/<dir>/*.patch.",
+  "$comment": "One entry per Pi package. source=npm: packages/<dir> holds the exact published tarball contents. source=git: packages/<dir> holds only the listed paths at the pinned commit. Local changes to upstream packages live in patches/<dir>/*.patch. source=own: our own package, its code edited in packages/<dir> directly. Its entry records its direct dependency pins and either each vendored dependency (direct and transitive) with its version and lockfile integrity, when node_modules is committed (web), or the lockfile as the integrity record, when node_modules is installed by the dotfiles (web-tools).",
   "packages": {
     "infisical-ai-skills": {
       "source": "git",
