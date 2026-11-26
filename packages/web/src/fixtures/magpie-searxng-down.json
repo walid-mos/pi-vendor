@@ -1,0 +1,1 @@
+{"id":1,"jsonrpc":"2.0","result":{"content":[{"text":"magpie couldn't search the web: SearXNG: Get \"http://searxng.internal:8080/search?format=json&q=rule+of+twelfths+tide\": dial tcp searxng.internal:8080: connect: connection refused","type":"text"}],"isError":true}}

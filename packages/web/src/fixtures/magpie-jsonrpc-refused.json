@@ -1,0 +1,1 @@
+{"error":{"code":-32602,"message":"unknown tool web_search: the gateway key \"example\" may not use the MCP server magpie-web-search: its owner picks the MCP servers it may use in Gateway → Gateway keys"},"id":1,"jsonrpc":"2.0"}
