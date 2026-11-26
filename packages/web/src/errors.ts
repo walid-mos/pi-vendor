@@ -3,6 +3,9 @@
  * turned into a tool result by `tools.ts`; any other exception is a bug and propagates.
  */
 
+/** What a server sent with a failure: its whole body, the start of a body too long to read, or why it could not be read. */
+export type ErrorBody = { state: "read"; text: string } | { state: "cut"; text: string } | { state: "unreadable"; reason: string };
+
 export type WebError =
 	| { kind: "gateway_missing"; what: "baseUrl" | "key" }
 	| { kind: "gateway_refused"; status: number; message: string }
@@ -15,7 +18,7 @@ export type WebError =
 	| { kind: "timeout"; afterMs: number }
 	| { kind: "aborted" }
 	| { kind: "too_many_redirects"; limit: number; chain: string[] }
-	| { kind: "http_status"; status: number; url: string }
+	| { kind: "http_status"; status: number; url: string; body: ErrorBody }
 	| { kind: "too_large"; limitBytes: number }
 	| { kind: "unsupported_content_type"; contentType: string }
 	| { kind: "unsupported_charset"; charset: string }
@@ -23,7 +26,7 @@ export type WebError =
 	| { kind: "option_not_supported"; option: "replies"; reason: string }
 	| { kind: "pdf_unreadable"; reason: string }
 	| { kind: "pdf_no_text"; pages: number }
-	| { kind: "x_unavailable"; code: number; message: string }
+	| { kind: "x_unavailable"; code: number; reply: ErrorBody }
 	| { kind: "no_metadata"; url: string; site: string }
 	| { kind: "media_host_blocked"; host: string }
 	| { kind: "unsupported_media_type"; mimeType: string }
@@ -52,6 +55,22 @@ function fromServer(text: string): string {
 	if (text.length <= MAX_SERVER_TEXT) return text;
 	// The cut can fall inside a surrogate pair; its lone half would be invalid text for the model's API.
 	return `${text.slice(0, MAX_SERVER_TEXT).toWellFormed()}… (${text.length - MAX_SERVER_TEXT} more characters)`;
+}
+
+/** A failure's body as the model sees it, cut like any server text; empty when the server sent none. */
+function fromBody(body: ErrorBody): string {
+	switch (body.state) {
+		case "read":
+			return fromServer(body.text.trim());
+		case "cut":
+			return `${body.text.slice(0, MAX_SERVER_TEXT).toWellFormed()}… (the rest of the body was not read)`;
+		case "unreadable":
+			return `its body could not be read (${withoutFinalStop(body.reason)})`;
+		default: {
+			const unhandled: never = body;
+			throw new Error(`unknown error body state "${(unhandled as { state: string }).state}"`);
+		}
+	}
 }
 
 /** A free-text field that is followed by a full stop of ours: its own final full stop would double it. */
@@ -97,7 +116,10 @@ export function describe(error: WebError): string {
 		case "too_many_redirects":
 			return `More than ${error.limit} redirects: ${fromServer(error.chain.join(" -> "))}`;
 		case "http_status":
-			return `HTTP ${error.status} from ${fromServer(error.url)}.`;
+		{
+			const body = fromBody(error.body);
+			return `HTTP ${error.status} from ${fromServer(error.url)}${body ? `: ${body}` : "."}`;
+		}
 		case "too_large":
 			return `The response is larger than ${error.limitBytes} bytes, the limit for its type; nothing was returned.`;
 		case "unsupported_content_type":
@@ -112,8 +134,10 @@ export function describe(error: WebError): string {
 			return `The PDF cannot be read: ${fromServer(withoutFinalStop(error.reason))}.`;
 		case "pdf_no_text":
 			return `The PDF's ${error.pages === 1 ? "single page holds" : `${error.pages} pages hold`} no text (a scan?); there is no OCR here.`;
-		case "x_unavailable":
-			return `FxTwitter, the third-party service that reads X posts, could not return this post (${error.code}: ${fromServer(error.message)}). Nothing else is tried.`;
+		case "x_unavailable": {
+			const reply = fromBody(error.reply);
+			return `FxTwitter, the third-party service that reads X posts, could not return this post (${error.code}${reply ? `: ${reply}` : ""}). Nothing else is tried.`;
+		}
 		case "no_metadata":
 			return `${fromServer(error.url)} exposes no title or description without JavaScript or a login. Its content needs e2e, with an agent account.`;
 		case "media_host_blocked":

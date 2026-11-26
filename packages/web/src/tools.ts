@@ -307,7 +307,7 @@ async function fxtwitter(deps: WebToolsDeps, path: string, signal: AbortSignal):
 		fetched = await get(new URL(path, deps.fxtwitter), { timeoutMs: FXTWITTER_TIMEOUT_MS, maxRedirects: 0, limitFor: () => MAX_PAGE_BYTES, accept: "application/json", signal }, deps.network);
 	} catch (thrown) {
 		if (thrown instanceof WebToolError && thrown.error.kind === "http_status") {
-			throw new WebToolError({ kind: "x_unavailable", code: thrown.error.status, message: `HTTP ${thrown.error.status}` }, { cause: thrown });
+			throw new WebToolError({ kind: "x_unavailable", code: thrown.error.status, reply: thrown.error.body }, { cause: thrown });
 		}
 		throw thrown;
 	}

@@ -241,6 +241,7 @@ test("FxTwitter answering 500 gives x_unavailable, and the X page itself is neve
 	assert.equal(result.isError, true);
 	assert.equal(result.details.error.kind, "x_unavailable");
 	assert.match(text(result), /FxTwitter/);
+	assert.match(text(result), /\(500: oops\)/, "FxTwitter's own reply reaches the model");
 	assert.deepEqual(looked, [], "no lookup of x.com");
 });
 

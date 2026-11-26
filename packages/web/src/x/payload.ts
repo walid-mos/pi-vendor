@@ -89,7 +89,7 @@ function reply(body: unknown): Json {
 	if (typeof top.code !== "number") throw bad("code is not a number");
 	if (top.code !== 200) {
 		const message = typeof top.message === "string" && top.message ? top.message : top.code === 404 ? "not found" : "no message";
-		throw new WebToolError({ kind: "x_unavailable", code: top.code, message });
+		throw new WebToolError({ kind: "x_unavailable", code: top.code, reply: { state: "read", text: message } });
 	}
 	return top;
 }

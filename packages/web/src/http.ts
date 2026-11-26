@@ -12,11 +12,17 @@ import { pipeline } from "node:stream/promises";
 import { createBrotliDecompress, createGunzip, createInflate } from "node:zlib";
 
 import { isPublicAddress } from "./address.ts";
-import { messageOf, WebToolError, withDeadline } from "./errors.ts";
+import { messageOf, WebToolError, withDeadline, type ErrorBody } from "./errors.ts";
 import { parseTarget } from "./url.ts";
 
 /** Generic on purpose: nothing that identifies the user or a project. */
 export const USER_AGENT = "Mozilla/5.0 (compatible; pi-web/1.0)";
+
+/**
+ * How much of a failure's body is read: enough for the 500 characters the model is shown, at up to 4 bytes each in
+ * UTF-8. The connection is dropped after it, so a long or stalled error body cannot hold the request.
+ */
+const ERROR_BODY_BYTES = 2000;
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
@@ -85,8 +91,7 @@ async function follow(start: URL, options: GetOptions, network: Network, signal:
 			continue;
 		}
 		if (status < 200 || status > 299) {
-			res.destroy();
-			throw new WebToolError({ kind: "http_status", status, url: url.href });
+			throw new WebToolError({ kind: "http_status", status, url: url.href, body: await readErrorBody(res, url, signal) });
 		}
 		const contentType = res.headers["content-type"] ?? "";
 		const body = await readBody(res, contentType, options.limitFor).catch((thrown: unknown) => {
@@ -158,6 +163,37 @@ async function readBody(res: IncomingMessage, contentType: string, limitFor: Get
 	} catch (thrown) {
 		res.destroy();
 		throw thrown;
+	}
+}
+
+/** Ends the reading of an error body once ERROR_BODY_BYTES have arrived. */
+class EnoughRead extends Error {}
+
+/**
+ * The start of a failure's body. A failure to read it is reported in the body rather than replacing the status; an
+ * abort or the deadline still ends the request. The response is always destroyed.
+ */
+async function readErrorBody(res: IncomingMessage, url: URL, signal: AbortSignal): Promise<ErrorBody> {
+	const chunks: Buffer[] = [];
+	let size = 0;
+	const text = () => Buffer.concat(chunks).subarray(0, ERROR_BODY_BYTES).toString("utf8");
+	try {
+		await pipeline(res, ...decoders(res.headers["content-encoding"]), async (source: AsyncIterable<Buffer>) => {
+			for await (const chunk of source) {
+				chunks.push(chunk);
+				size += chunk.length;
+				if (size > ERROR_BODY_BYTES) throw new EnoughRead();
+			}
+		});
+		return { state: "read", text: text() };
+	} catch (thrown) {
+		if (thrown instanceof EnoughRead) return { state: "cut", text: text() };
+		if (signal.aborted) throw thrown;
+		const failure = toWebToolError(thrown, url);
+		if (failure instanceof WebToolError) return { state: "unreadable", reason: failure.message };
+		throw failure;
+	} finally {
+		res.destroy();
 	}
 }
 

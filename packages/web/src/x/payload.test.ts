@@ -135,11 +135,11 @@ test("a status with no text gives bad_response from fxtwitter", () => {
 });
 
 test("the not-found reply gives x_unavailable with its code", () => {
-	assert.deepEqual(failure(() => decodePost(load("not-found.json"))), { kind: "x_unavailable", code: 404, message: "not found" });
+	assert.deepEqual(failure(() => decodePost(load("not-found.json"))), { kind: "x_unavailable", code: 404, reply: { state: "read", text: "not found" } });
 });
 
 test("FxTwitter's own error message is kept", () => {
-	assert.deepEqual(failure(() => decodePost(load("bad-id.json"))), { kind: "x_unavailable", code: 400, message: "id: tweet ID must be a numeric snowflake" });
+	assert.deepEqual(failure(() => decodePost(load("bad-id.json"))), { kind: "x_unavailable", code: 400, reply: { state: "read", text: "id: tweet ID must be a numeric snowflake" } });
 });
 
 test("a reply without a numeric code gives bad_response, not FxTwitter's own error", () => {

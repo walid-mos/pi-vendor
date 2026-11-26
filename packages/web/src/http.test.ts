@@ -219,9 +219,29 @@ test("the caller's abort gives aborted", async (t) => {
 	assert.deepEqual(await failure(get(new URL(s.url), options({ signal: controller.signal }), testNetwork())), { kind: "aborted" });
 });
 
-test("a 404 gives http_status", async (t) => {
+test("a 404 gives http_status with the server's body", async (t) => {
 	const s = await serve(t, (_req, res) => res.writeHead(404).end("missing"));
-	assert.deepEqual(await failure(get(new URL(`${s.url}/gone`), options(), testNetwork())), { kind: "http_status", status: 404, url: `${s.url}/gone` });
+	assert.deepEqual(await failure(get(new URL(`${s.url}/gone`), options(), testNetwork())), {
+		kind: "http_status",
+		status: 404,
+		url: `${s.url}/gone`,
+		body: { state: "read", text: "missing" },
+	});
+});
+
+test("an error status's body is decoded like any body", async (t) => {
+	const s = await serve(t, (_req, res) => res.writeHead(404, { "Content-Encoding": "gzip" }).end(gzipSync("missing")));
+	assert.deepEqual((await failure(get(new URL(s.url), options(), testNetwork()))).body, { state: "read", text: "missing" });
+});
+
+test("an error status's body that cannot be decoded is reported unreadable, with the status kept", async (t) => {
+	const s = await serve(t, (_req, res) => res.writeHead(404, { "Content-Encoding": "zstd" }).end("x"));
+	assert.deepEqual(await failure(get(new URL(s.url), options(), testNetwork())), {
+		kind: "http_status",
+		status: 404,
+		url: `${s.url}/`,
+		body: { state: "unreadable", reason: "Network error (unsupported_encoding): the server sent Content-Encoding zstd" },
+	});
 });
 
 /** Sends the headers and a first chunk of a body that never ends; says whether the client drops the connection. */
@@ -247,12 +267,21 @@ test("the body of a redirect is not read: the client drops that connection", asy
 	assert.equal(await dropped, true);
 });
 
-test("the body of an error status is not read: the client drops the connection", async (t) => {
+test("the body of an error status is read up to 2000 bytes, then the client drops the connection", async (t) => {
 	let dropped: Promise<boolean> | undefined;
 	const s = await serve(t, (_req, res) => {
-		dropped = stallAfterHeaders(res, 404);
+		res.writeHead(500);
+		res.write("x".repeat(3000));
+		dropped = new Promise((resolve) => {
+			const timer = setTimeout(() => resolve(false), 1000);
+			res.on("close", () => {
+				clearTimeout(timer);
+				resolve(true);
+			});
+		});
 	});
-	assert.equal((await failure(get(new URL(s.url), options({ timeoutMs: 10_000 }), testNetwork()))).kind, "http_status");
+	const error = await failure(get(new URL(s.url), options({ timeoutMs: 10_000 }), testNetwork()));
+	assert.deepEqual(error, { kind: "http_status", status: 500, url: `${s.url}/`, body: { state: "cut", text: "x".repeat(2000) } });
 	assert.equal(await dropped, true);
 });
 

@@ -72,7 +72,7 @@ test("an unavailable quote says why", () => {
 test("the media list has one line per item: its label, a video's duration, alt text, and what was not attached", () => {
 	const media: MediaLine[] = [
 		{ label: "photo 1", altText: "A crowd at the Oscars", outcome: { state: "attached" } },
-		{ label: "photo 2", outcome: { state: "failed", error: { kind: "http_status", status: 404, url: "https://pbs.twimg.com/media/b.jpg" } } },
+		{ label: "photo 2", outcome: { state: "failed", error: { kind: "http_status", status: 404, url: "https://pbs.twimg.com/media/b.jpg", body: { state: "read", text: "" } } } },
 		{ label: "video 1", durationS: 17.25, outcome: { state: "attached" } },
 		{ label: "photo 7", outcome: { state: "left_out", reason: "over the limit of 6 images" } },
 	];

@@ -33,7 +33,7 @@ test("blocked_address names e2e", () => {
 });
 
 test("x_unavailable names FxTwitter and says nothing else is tried", () => {
-	const text = describe({ kind: "x_unavailable", code: 404, message: "NOT_FOUND" });
+	const text = describe({ kind: "x_unavailable", code: 404, reply: { state: "read", text: "NOT_FOUND" } });
 	assert.match(text, /FxTwitter/);
 	assert.match(text, /nothing else is tried/i);
 });
@@ -80,13 +80,14 @@ const fromServers: WebError[] = [
 	{ kind: "gateway_refused", status: 500, message: long },
 	{ kind: "search_failed", message: long },
 	{ kind: "network", code: "ECONNRESET", message: long },
-	{ kind: "x_unavailable", code: 500, message: long },
+	{ kind: "x_unavailable", code: 500, reply: { state: "read", text: long } },
 	{ kind: "pdf_unreadable", reason: long },
 	{ kind: "unsupported_content_type", contentType: long },
 	{ kind: "unsupported_charset", charset: long },
 	// A redirect's Location is a server's text too: it ends up in these URLs and host names.
 	{ kind: "invalid_url", url: long, reason: "not a URL" },
-	{ kind: "http_status", status: 404, url: long },
+	{ kind: "http_status", status: 404, url: long, body: { state: "read", text: "" } },
+	{ kind: "http_status", status: 404, url: "https://example.com/gone", body: { state: "read", text: long } },
 	{ kind: "too_many_redirects", limit: 5, chain: [long] },
 	{ kind: "dns_failed", host: long, code: "ENOTFOUND" },
 	{ kind: "blocked_address", host: long, address: "127.0.0.1" },
@@ -101,6 +102,35 @@ for (const error of fromServers) {
 		assert.match(text, /1500 more characters/);
 	});
 }
+
+test("http_status ends at the URL when the server sent no body", () => {
+	assert.equal(describe({ kind: "http_status", status: 404, url: "https://example.com/gone", body: { state: "read", text: " \n" } }), "HTTP 404 from https://example.com/gone.");
+});
+
+test("http_status gives the server's body after the status", () => {
+	assert.equal(
+		describe({ kind: "http_status", status: 404, url: "https://example.com/gone", body: { state: "read", text: '{"code":404,"message":"NOT_FOUND"}\n' } }),
+		'HTTP 404 from https://example.com/gone: {"code":404,"message":"NOT_FOUND"}',
+	);
+});
+
+test("a body read only in part keeps its first 500 characters and says the rest was not read", () => {
+	const text = describe({ kind: "http_status", status: 502, url: "https://example.com/", body: { state: "cut", text: long } });
+	assert.ok(text.includes("x".repeat(500)), "keeps the first 500 characters");
+	assert.ok(!text.includes("x".repeat(501)), "drops the rest");
+	assert.match(text, /the rest of the body was not read/);
+	assert.doesNotMatch(text, /more characters/, "no count: the body's length is unknown");
+});
+
+test("a body that could not be read says why", () => {
+	const text = describe({ kind: "http_status", status: 404, url: "https://example.com/gone", body: { state: "unreadable", reason: "Network error (ECONNRESET): socket hang up" } });
+	assert.equal(text, "HTTP 404 from https://example.com/gone: its body could not be read (Network error (ECONNRESET): socket hang up)");
+});
+
+test("x_unavailable gives FxTwitter's reply after its code", () => {
+	assert.match(describe({ kind: "x_unavailable", code: 404, reply: { state: "read", text: '{"code":404,"message":"NOT_FOUND"}' } }), /\(404: \{"code":404,"message":"NOT_FOUND"\}\)/);
+	assert.match(describe({ kind: "x_unavailable", code: 503, reply: { state: "read", text: "" } }), /\(503\)\. Nothing else is tried\.$/);
+});
 
 test("a cut never leaves half of a surrogate pair", () => {
 	const text = describe({ kind: "gateway_refused", status: 500, message: `${"x".repeat(499)}😀${"y".repeat(100)}` });
