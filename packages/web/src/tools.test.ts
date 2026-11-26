@@ -57,10 +57,10 @@ function deps(more: Partial<WebToolsDeps> = {}): WebToolsDeps {
 
 type Result = { content: ({ type: "text"; text: string } | { type: "image"; data: string; mimeType: string })[]; details: any; isError?: boolean };
 
-async function run(d: WebToolsDeps, name: "web_search" | "fetch_content", params: Record<string, unknown>): Promise<Result> {
+async function run(d: WebToolsDeps, name: "web_search" | "fetch_content", params: Record<string, unknown>, signal?: AbortSignal): Promise<Result> {
 	const tool = createWebTools(d).find((t) => t.name === name);
 	assert.ok(tool, name);
-	return (await tool.execute("call-1", params as never, undefined, undefined, {} as never)) as Result;
+	return (await tool.execute("call-1", params as never, signal, undefined, {} as never)) as Result;
 }
 
 const text = (result: Result) => result.content.filter((c) => c.type === "text").map((c) => (c as { text: string }).text).join("\n");
@@ -218,6 +218,20 @@ test("a photo the resizer cannot decode is failed with image_undecodable", async
 	assert.deepEqual(result.content.map((c) => c.type), ["text"]);
 	assert.equal(result.details.media[0].state, "failed");
 	assert.equal(result.details.media[0].error.kind, "image_undecodable");
+});
+
+test("aborting an X call while its images download fails the call with aborted, not a post whose every image is not attached", async (t) => {
+	let imageRequested = () => {};
+	const requested = new Promise<void>((resolve) => (imageRequested = resolve));
+	const m = await serve(t, () => imageRequested()); // never answers
+	const fx = await serve(t, (_req, res) => res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(postWithPhotos(m.port))));
+	const controller = new AbortController();
+	const call = run(deps({ fxtwitter: fx.origin }), "fetch_content", { url: "https://x.com/jack/status/20" }, controller.signal);
+	await requested;
+	controller.abort();
+	const result = await call;
+	assert.equal(result.isError, true);
+	assert.deepEqual(result.details.error, { kind: "aborted" });
 });
 
 test("FxTwitter answering 500 gives x_unavailable, and the X page itself is never requested", async (t) => {

@@ -7,7 +7,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 import { compact } from "./compact.ts";
 import { decodeText } from "./decode.ts";
-import { WebToolError, type WebError } from "./errors.ts";
+import { WebToolError, withDeadline, type WebError } from "./errors.ts";
 import { extract, type Extracted } from "./extract.ts";
 import { get, mimeOf, type Fetched, type Network } from "./http.ts";
 import { extractPdf, MAX_PDF_PAGES, PDF_TIMEOUT_MS } from "./pdf.ts";
@@ -227,8 +227,16 @@ async function readSocial(deps: WebToolsDeps, url: URL, site: SocialMeta["site"]
 }
 
 async function readXPost(deps: WebToolsDeps, id: string, withReplies: boolean, signal: AbortSignal | undefined): Promise<Result<FetchDetails>> {
-	const deadline = AbortSignal.timeout(X_CALL_TIMEOUT_MS);
-	const callSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
+	const call = withDeadline(X_CALL_TIMEOUT_MS, signal);
+	try {
+		return await readXPostWithin(deps, id, withReplies, call.signal);
+	} catch (thrown) {
+		throw call.rethrow(thrown);
+	}
+}
+
+/** `callSignal` ends with the caller's abort or the deadline of the whole call; each request below also has its own. */
+async function readXPostWithin(deps: WebToolsDeps, id: string, withReplies: boolean, callSignal: AbortSignal): Promise<Result<FetchDetails>> {
 	const thread = await fxtwitter(deps, `/2/thread/${id}`, callSignal);
 	const conversation = withReplies ? await fxtwitter(deps, `/2/conversation/${id}`, callSignal) : undefined;
 	const post = decodePost(thread, conversation);
@@ -245,7 +253,8 @@ async function readXPost(deps: WebToolsDeps, id: string, withReplies: boolean, s
 				return { resized: await resize(deps, bytes, mimeType) };
 			} catch (thrown) {
 				// A failed image is not a failed call, and it is never silent: the text, the details and the renderer say so.
-				if (!(thrown instanceof WebToolError)) throw thrown;
+				// The end of the call itself (an abort, or the call's deadline reported as one) is not an image's failure.
+				if (!(thrown instanceof WebToolError) || thrown.error.kind === "aborted") throw thrown;
 				return { error: thrown.error };
 			}
 		}),
