@@ -162,10 +162,11 @@ function decodeMedia(value: unknown, path: string): XMedia[] {
 		const v = object(video, `${path}.videos[${i}]`);
 		const poster = optionalString(v.thumbnail_url, `${path}.videos[${i}].thumbnail_url`);
 		// An animated GIF comes as a looping video: its poster is the image of the GIF.
-		if (v.type === "gif") {
-			if (poster) out.push({ kind: "gif", url: poster });
+		if (v.type === "gif" && poster) {
+			out.push({ kind: "gif", url: poster });
 			continue;
 		}
+		// A video, or a GIF without its poster image: listed as a video, which media.ts reports as not attached.
 		out.push(compact({ kind: "video", posterUrl: poster, durationS: count(v.duration, `${path}.videos[${i}].duration`) }) as XMedia);
 	}
 	return out;

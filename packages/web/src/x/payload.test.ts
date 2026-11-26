@@ -149,3 +149,9 @@ test("a reply without a numeric code gives bad_response, not FxTwitter's own err
 test("a reply that is not an object gives bad_response", () => {
 	assert.deepEqual(failure(() => decodePost("<html>")), { kind: "bad_response", from: "fxtwitter", what: "the reply is not an object" });
 });
+
+test("an animated GIF without a poster is kept in the media list, never dropped", () => {
+	const json = load("thread-text.json");
+	json.status.media = { videos: [{ type: "gif", url: "https://video.twimg.com/tweet_video/a.mp4", width: 1, height: 1, duration: 0, formats: [] }] };
+	assert.equal(decodePost(json).root.media.length, 1);
+});
