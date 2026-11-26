@@ -53,6 +53,10 @@ test("gatewayFrom without a baseUrl or a key gives gateway_missing naming which"
 	assert.throws(() => gatewayFrom("https://magpie.example.net/v1", ""), (e: unknown) => e instanceof WebToolError && e.error.kind === "gateway_missing" && e.error.what === "key");
 });
 
+test("gatewayFrom with a baseUrl that is not a URL gives invalid_url instead of a bare TypeError", () => {
+	assert.throws(() => gatewayFrom("magpie.example.net/v1", "sk-1"), (e: unknown) => e instanceof WebToolError && e.error.kind === "invalid_url" && e.error.url === "magpie.example.net/v1");
+});
+
 test("the key travels in Authorization: Bearer, never in the URL or the body", async (t) => {
 	const { gateway, recorded } = await magpie(t, { body: fixture("magpie-search-ok.json") });
 	await search({ query: "rule of twelfths tide" }, gateway, deps);
@@ -93,8 +97,7 @@ test("each freshness is sent as its number of days", async (t) => {
 test("a recorded success yields its text unchanged", async (t) => {
 	const { gateway } = await magpie(t, { body: fixture("magpie-search-ok.json") });
 	const text = await search({ query: "rule of twelfths tide" }, gateway, deps);
-	assert.ok(text.startsWith("1. Rule of twelfths - Wikipedia — https://en.wikipedia.org/wiki/Rule_of_twelfths\n"));
-	assert.match(text, /^2\. Calculating the tides: The Rule of Twelfths - Surf Simply — https:\/\/surfsimply\.com\//m);
+	assert.equal(text, JSON.parse(fixture("magpie-search-ok.json")).result.content[0].text);
 });
 
 test("the recorded SearXNG failure gives search_failed with Magpie's text", async (t) => {
@@ -126,9 +129,24 @@ test("an HTTP error with a body that is not JSON gives gateway_refused with that
 	assert.deepEqual(await failure(search({ query: "tides" }, gateway, deps)), { kind: "gateway_refused", status: 502, message: "Bad Gateway" });
 });
 
+test("an HTTP error with an empty body gives gateway_refused saying the body is empty", async (t) => {
+	const { gateway } = await magpie(t, { status: 502, contentType: "text/plain", body: "" });
+	assert.deepEqual(await failure(search({ query: "tides" }, gateway, deps)), { kind: "gateway_refused", status: 502, message: "the reply has no body" });
+});
+
 test("a body that is not JSON gives bad_response from magpie", async (t) => {
 	const { gateway } = await magpie(t, { contentType: "text/html", body: "<html>login</html>" });
 	assert.equal((await failure(search({ query: "tides" }, gateway, deps))).kind, "bad_response");
+});
+
+test("a body that is JSON null gives bad_response from magpie", async (t) => {
+	const { gateway } = await magpie(t, { body: "null" });
+	assert.equal((await failure(search({ query: "tides" }, gateway, deps))).kind, "bad_response");
+});
+
+test("a content block that is null is skipped like any block that is not text", async (t) => {
+	const { gateway } = await magpie(t, { body: JSON.stringify({ jsonrpc: "2.0", id: 1, result: { content: [null, { type: "text", text: "1. Tides" }] } }) });
+	assert.equal(await search({ query: "tides" }, gateway, deps), "1. Tides");
 });
 
 test("a result with no text block gives bad_response from magpie", async (t) => {
@@ -157,4 +175,14 @@ test("a gateway that cannot be reached gives network with the system code", asyn
 	const error = await failure(search({ query: "tides" }, gatewayFrom(`http://127.0.0.1:${port}/v1`, "sk-1"), deps));
 	assert.equal(error.kind, "network");
 	assert.equal((error as { code: string }).code, "ECONNREFUSED");
+});
+
+test("a name that fails on every one of its addresses gives network with their messages, not an empty one", async () => {
+	const server = createServer();
+	await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+	const { port } = server.address() as AddressInfo;
+	await new Promise((resolve) => server.close(resolve));
+	const error = await failure(search({ query: "tides" }, gatewayFrom(`http://localhost:${port}/v1`, "sk-1"), deps));
+	assert.equal(error.kind, "network");
+	assert.match((error as { message: string }).message, /ECONNREFUSED/);
 });

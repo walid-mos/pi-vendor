@@ -22,7 +22,11 @@ export type Gateway = { url: string; key: string };
 export function gatewayFrom(baseUrl: string | undefined, key: string | undefined): Gateway {
 	if (!baseUrl) throw new WebToolError({ kind: "gateway_missing", what: "baseUrl" });
 	if (!key) throw new WebToolError({ kind: "gateway_missing", what: "key" });
-	return { url: new URL(SERVER_PATH, baseUrl).href, key };
+	try {
+		return { url: new URL(SERVER_PATH, baseUrl).href, key };
+	} catch (thrown) {
+		throw new WebToolError({ kind: "invalid_url", url: baseUrl, reason: 'Pi\'s "magpie" provider baseUrl in models.json is not a URL' }, { cause: thrown });
+	}
 }
 
 export async function search(params: SearchParams, gateway: Gateway, deps: { timeoutMs: number; signal?: AbortSignal }): Promise<string> {
@@ -51,24 +55,31 @@ export async function search(params: SearchParams, gateway: Gateway, deps: { tim
 	} catch (thrown) {
 		if (deps.signal?.aborted) throw new WebToolError({ kind: "aborted" }, { cause: thrown });
 		if (deadline.aborted) throw new WebToolError({ kind: "timeout", afterMs: deps.timeoutMs }, { cause: thrown });
-		const code = ((thrown as Error).cause as NodeJS.ErrnoException | undefined)?.code;
-		if (typeof code !== "string") throw thrown;
-		throw new WebToolError({ kind: "network", code, message: ((thrown as Error).cause as Error).message }, { cause: thrown });
+		// fetch wraps the system error in a TypeError: the code and the message are on its cause.
+		const system = (thrown as Error).cause as NodeJS.ErrnoException | undefined;
+		if (typeof system?.code !== "string") throw thrown;
+		throw new WebToolError({ kind: "network", code: system.code, message: messageOf(system) }, { cause: thrown });
 	}
 	return readReply(status, text);
+}
+
+/** A connection that failed on every address of a name is an AggregateError whose own message is empty. */
+function messageOf(system: Error): string {
+	if (system instanceof AggregateError) return system.errors.map((error) => (error as Error).message).join("; ");
+	return system.message;
 }
 
 function readReply(status: number, text: string): string {
 	const body = parseJson(text);
 	if (status < 200 || status > 299) {
-		throw new WebToolError({ kind: "gateway_refused", status, message: errorMessage(body) ?? text });
+		throw new WebToolError({ kind: "gateway_refused", status, message: errorMessage(body) ?? (text.trim() === "" ? "the reply has no body" : text) });
 	}
-	if (body === undefined) throw badResponse("the reply is not JSON");
+	if (typeof body !== "object" || body === null) throw badResponse("the reply is not a JSON object");
 	const refusal = errorMessage(body);
 	if (refusal !== undefined) throw new WebToolError({ kind: "gateway_refused", status, message: refusal });
 	const result = (body as { result?: { content?: unknown; isError?: unknown } }).result;
 	const content = Array.isArray(result?.content) ? (result.content as { type?: unknown; text?: unknown }[]) : [];
-	const texts = content.filter((c) => c.type === "text" && typeof c.text === "string").map((c) => c.text as string);
+	const texts = content.filter((c) => c?.type === "text" && typeof c.text === "string").map((c) => c.text as string);
 	if (texts.length === 0) throw badResponse("the result has no text");
 	const joined = texts.join("\n\n");
 	if (result?.isError === true) throw new WebToolError({ kind: "search_failed", message: joined });
