@@ -7,7 +7,7 @@ export type WebError =
 	| { kind: "gateway_missing"; what: "baseUrl" | "key" }
 	| { kind: "gateway_refused"; status: number; message: string }
 	| { kind: "search_failed"; message: string }
-	| { kind: "bad_response"; from: "magpie" | "fxtwitter" | "tiktok_oembed"; what: string }
+	| { kind: "bad_response"; from: "magpie" | "fxtwitter"; what: string }
 	| { kind: "invalid_url"; url: string; reason: string }
 	| { kind: "blocked_address"; host: string; address: string }
 	| { kind: "dns_failed"; host: string; code: string }
