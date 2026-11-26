@@ -25,16 +25,21 @@ const IPV4_BLOCKED = [
 ];
 
 const IPV6_BLOCKED = [
-	"::/128",
-	"::1/128",
+	// The unspecified and loopback addresses, and the deprecated IPv4-compatible ones (::a.b.c.d).
+	"::/96",
+	// The deprecated IPv4-translated ones (::ffff:0:a.b.c.d); IPv4-mapped ones (::ffff:a.b.c.d) are checked as IPv4.
+	"::ffff:0:0:0/96",
 	"64:ff9b::/96",
 	"64:ff9b:1::/48",
 	"100::/64",
 	"2001::/23",
 	"2001:db8::/32",
 	"2002::/16",
+	"3fff::/20",
 	"fc00::/7",
 	"fe80::/10",
+	// Deprecated site-local addresses.
+	"fec0::/10",
 	"ff00::/8",
 ];
 
@@ -47,7 +52,11 @@ function addSubnet(range: string, type: "ipv4" | "ipv6"): void {
 	blocked.addSubnet(network, Number(prefix), type);
 }
 
-/** True when `ip` is a public address. BlockList checks an IPv4-mapped IPv6 address against the IPv4 ranges. */
+/**
+ * True when `ip` is a public address. Throws on anything that is not an IP literal as `isIP` reads it (a host name,
+ * `127.1`, a bracketed address): the caller resolves and normalizes first, because a guess would be a hidden verdict.
+ * BlockList checks an IPv4-mapped IPv6 address against the IPv4 ranges.
+ */
 export function isPublicAddress(ip: string): boolean {
 	const version = isIP(ip);
 	if (version === 0) throw new Error(`not an IP address: ${ip}`);
