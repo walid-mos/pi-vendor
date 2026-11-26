@@ -99,8 +99,8 @@
       ],
       "integrity": {
         "tarball": "sha512-/FwatKZHyuguwJia4zqLLLjJuSJ0gYYLyJT3w+3oWQXvYhA/fXH/GAqxhkqemgD9pPYQ8+zgoInI/cTNost76w==",
-        "contentSha256": "c83485a570166dbd7765c3cf30341eaeb1f14d4c170b743db9018ca02e932cd1",
-        "contentSha256Method": "cd packages/e2e && find . -type f | sort | xargs shasum -a 256 | shasum -a 256"
+        "contentSha256": "ae05ba493495dd66103678af982c91fe17b0e0a722362faf926e1dbdb57819a4",
+        "contentSha256Method": "cd packages/e2e && find . -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 (LC_ALL=C: the order of sort, and so the hash, otherwise depends on the locale)"
       },
       "license": "Apache-2.0",
       "vendoredAt": "2026-11-26",
