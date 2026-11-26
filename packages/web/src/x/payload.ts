@@ -58,41 +58,53 @@ export function decodePost(thread: unknown, conversation?: unknown): XPost {
 	const root = decodeStatus(object(top.status, "status"), "status", { depth: 0, cut: false, dropped });
 
 	const others = array(top.thread, "thread")
-		.map((entry, i) => decodeEntry(entry, `thread[${i}]`, dropped))
-		.filter((entry) => entry.kind !== "status" || entry.id !== root.id);
+		.map((entry, i) => decodeEntry(entry, `thread[${i}]`))
+		.filter(({ entry }) => entry.kind !== "status" || entry.id !== root.id);
 	dropped.thread = Math.max(0, others.length - MAX_THREAD_STATUSES);
-	const post: XPost = { root, thread: others.slice(0, MAX_THREAD_STATUSES), dropped };
+	const post: XPost = { root, thread: keep(others, MAX_THREAD_STATUSES, dropped), dropped };
 
 	if (conversation !== undefined) {
-		const inThread = new Set(others.map((entry) => (entry.kind === "status" ? entry.id : "")));
+		const inThread = new Set(others.map(({ entry }) => (entry.kind === "status" ? entry.id : "")));
 		const replies = array(reply(conversation).replies, "replies")
-			.map((entry, i) => decodeEntry(entry, `replies[${i}]`, dropped))
-			.filter((entry) => entry.kind !== "status" || (entry.id !== root.id && !inThread.has(entry.id)));
+			.map((entry, i) => decodeEntry(entry, `replies[${i}]`))
+			.filter(({ entry }) => entry.kind !== "status" || (entry.id !== root.id && !inThread.has(entry.id)));
 		dropped.replies = Math.max(0, replies.length - MAX_REPLIES);
-		post.replies = replies.slice(0, MAX_REPLIES);
+		post.replies = keep(replies, MAX_REPLIES, dropped);
 	}
 	return post;
+}
+
+/** The first `max` posts of a list. Only these add the quotes their depth cap left out: a post cut by the list's cap is not in the result, so neither are its quotes. */
+function keep(list: Decoded[], max: number, dropped: XPost["dropped"]): XEntry[] {
+	const kept = list.slice(0, max);
+	for (const { quotes } of kept) dropped.quotes += quotes;
+	return kept.map(({ entry }) => entry);
 }
 
 /** The top level of a reply: FxTwitter's `code` other than 200 is its own error. */
 function reply(body: unknown): Json {
 	if (typeof body !== "object" || body === null || Array.isArray(body)) throw bad("the reply is not an object");
 	const top = body as Json;
+	if (typeof top.code !== "number") throw bad("code is not a number");
 	if (top.code !== 200) {
-		const code = typeof top.code === "number" ? top.code : 0;
-		const message = typeof top.message === "string" && top.message ? top.message : code === 404 ? "not found" : "no message";
-		throw new WebToolError({ kind: "x_unavailable", code, message });
+		const message = typeof top.message === "string" && top.message ? top.message : top.code === 404 ? "not found" : "no message";
+		throw new WebToolError({ kind: "x_unavailable", code: top.code, message });
 	}
 	return top;
 }
 
-type Context = { depth: number; cut: boolean; dropped: XPost["dropped"] };
+type Context = { depth: number; cut: boolean; dropped: { quotes: number } };
+
+/** A decoded post of the thread or of the replies, and the quotes its depth cap left out, not yet counted. */
+type Decoded = { entry: XEntry; quotes: number };
 
 /** A post of the thread or of the replies: its text is cut, and its quotes count from its own level. */
-function decodeEntry(value: unknown, path: string, dropped: XPost["dropped"]): XEntry {
+function decodeEntry(value: unknown, path: string): Decoded {
 	const json = object(value, path);
-	if (json.type === "tombstone") return unavailable(json, path);
-	return decodeStatus(json, path, { depth: 0, cut: true, dropped });
+	if (json.type === "tombstone") return { entry: unavailable(json, path), quotes: 0 };
+	const dropped = { quotes: 0 };
+	const entry = decodeStatus(json, path, { depth: 0, cut: true, dropped });
+	return { entry, quotes: dropped.quotes };
 }
 
 function decodeStatus(json: Json, path: string, context: Context): XStatus {

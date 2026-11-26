@@ -35,6 +35,21 @@ test("quotes are nested, one level of > per quote", () => {
 	assert.doesNotMatch(text, /^> > > > @/m);
 });
 
+test("every line of a quoted post keeps its > prefix, the lines of a multi-line text too", () => {
+	const json = load("thread-text.json");
+	json.status.quote = { ...json.status, id: "1", text: "first line\nsecond line\n\nfourth line" };
+	assert.match(formatPost(decodePost(json), []), /^> first line\n> second line\n>\n> fourth line$/m);
+});
+
+test("a post with no text, such as a photo alone, has no empty paragraph", () => {
+	const json = load("thread-text.json");
+	json.status.text = "";
+	assert.equal(
+		formatPost(decodePost(json), []),
+		["@jack, Tue Mar 21 20:50:14 +0000 2006", "https://x.com/jack/status/20", "", "325126 likes, 126274 reposts, 19260 replies"].join("\n"),
+	);
+});
+
 test("what the caps left out is stated in a last line", () => {
 	const quotes = formatPost(decodePost(load("thread-quotes-5.json")), []);
 	assert.match(quotes, /\nLeft out by the limits: 2 deeper quotes\.$/);

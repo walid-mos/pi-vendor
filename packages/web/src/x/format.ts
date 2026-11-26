@@ -15,13 +15,14 @@ export type MediaLine = {
 };
 
 export function formatPost(post: XPost, media: MediaLine[]): string {
-	const sections = [entryLines(post.root).join("\n")];
+	const text = (entry: XEntry) => entryLines(entry).join("\n");
+	const sections = [text(post.root)];
 	if (post.thread.length > 0) {
 		const more = post.thread.length === 1 ? "1 more post" : `${post.thread.length} more posts`;
-		sections.push(`Thread by @${post.root.author.handle}, ${more}:`, ...post.thread.map((entry) => entryLines(entry).join("\n")));
+		sections.push(`Thread by @${post.root.author.handle}, ${more}:`, ...post.thread.map(text));
 	}
 	if (post.replies) {
-		sections.push(`Replies, ${post.replies.length} shown:`, ...post.replies.map((entry) => entryLines(entry).join("\n")));
+		sections.push(`Replies, ${post.replies.length} shown:`, ...post.replies.map(text));
 	}
 	if (media.length > 0) sections.push(["Media:", ...media.map(mediaLine)].join("\n"));
 	const left = leftOut(post.dropped);
@@ -38,7 +39,7 @@ function statusLines(status: XStatus): string[] {
 	const name = status.author.name && status.author.name !== status.author.handle ? ` (${status.author.name})` : "";
 	const lines = [`@${status.author.handle}${name}${status.createdAt ? `, ${status.createdAt}` : ""}`, status.url];
 	if (status.replyingTo) lines.push(`Replying to @${status.replyingTo}`);
-	lines.push("", status.text);
+	if (status.text) lines.push("", status.text);
 	if (status.poll) {
 		const votes = status.poll.totalVotes === undefined ? "" : `, ${status.poll.totalVotes} votes`;
 		lines.push("", `Poll${votes}:`, ...status.poll.choices.map((c) => `- ${c.label}${c.count === undefined ? "" : `: ${c.count}`}`));
@@ -46,17 +47,12 @@ function statusLines(status: XStatus): string[] {
 	if (status.communityNote) lines.push("", `Community note: ${status.communityNote}`);
 	const engagement = engagementLine(status.engagement);
 	if (engagement) lines.push("", engagement);
-	if (status.quote) lines.push("", "Quoting:", ...entryLines(status.quote).map((line) => (line ? `> ${line}` : ">")));
+	if (status.quote) lines.push("", "Quoting:", ...entryLines(status.quote).flatMap((line) => line.split("\n")).map((line) => (line ? `> ${line}` : ">")));
 	return lines;
 }
 
 function engagementLine(e: XStatus["engagement"]): string {
-	const parts: string[] = [];
-	if (e.likes !== undefined) parts.push(`${e.likes} likes`);
-	if (e.reposts !== undefined) parts.push(`${e.reposts} reposts`);
-	if (e.replies !== undefined) parts.push(`${e.replies} replies`);
-	if (e.views !== undefined) parts.push(`${e.views} views`);
-	return parts.join(", ");
+	return (["likes", "reposts", "replies", "views"] as const).flatMap((key) => (e[key] === undefined ? [] : [`${e[key]} ${key}`])).join(", ");
 }
 
 function mediaLine(m: MediaLine): string {

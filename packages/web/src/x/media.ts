@@ -49,8 +49,10 @@ export function collectMedia(post: XPost): { refs: MediaRef[]; leftOut: LeftOut[
 	const seen = new Set<string>();
 	const numbers = new Map<string, number>();
 	for (const { group, ...item } of items) {
-		if (item.url !== undefined && seen.has(item.url)) continue;
-		if (item.url !== undefined) seen.add(item.url);
+		if (item.url !== undefined) {
+			if (seen.has(item.url)) continue;
+			seen.add(item.url);
+		}
 		const n = (numbers.get(group) ?? 0) + 1;
 		numbers.set(group, n);
 		const label = group.endsWith("card image") ? group : `${group} ${n}`;

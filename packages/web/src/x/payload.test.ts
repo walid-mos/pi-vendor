@@ -103,13 +103,29 @@ test("replies leave out the author's thread and keep at most 20", () => {
 	assert.equal(post.dropped.replies, 6, "27 replies, 1 of them in the thread, 20 kept");
 });
 
-test("a quoted, threaded or replied post's text is cut at 4000 characters, and the cut is stated", () => {
+test("a quoted post's text is cut at 4000 characters and the cut is stated; the root's is not cut", () => {
 	const json = load("thread-quotes-5.json");
 	json.status.quote.text = "q".repeat(5000);
 	json.status.text = "r".repeat(5000);
 	const post = decodePost(json);
 	assert.equal(post.root.text, "r".repeat(5000), "the root's own text is not cut");
 	assert.equal(status(post.root.quote).text, `${"q".repeat(4000)}… (1000 more characters)`);
+});
+
+test("the root's copy in its thread does not count its deeper quotes a second time", () => {
+	const json = load("thread-quotes-5.json");
+	json.thread[0] = structuredClone(json.status);
+	assert.equal(decodePost(json).dropped.quotes, 2);
+});
+
+test("the deeper quotes of a thread post or of a reply that the caps cut are not counted", () => {
+	const deepQuote = load("thread-quotes-5.json").status.quote;
+	const thread = load("thread-12.json");
+	thread.thread.at(-1).quote = deepQuote;
+	assert.deepEqual(decodePost(thread).dropped, { quotes: 0, thread: 1, replies: 0 });
+	const conversation = load("conversation-photos.json");
+	conversation.replies.at(-1).quote = deepQuote;
+	assert.deepEqual(decodePost(load("thread-photos.json"), conversation).dropped, { quotes: 0, thread: 0, replies: 6 });
 });
 
 test("a status with no text gives bad_response from fxtwitter", () => {
@@ -124,6 +140,10 @@ test("the not-found reply gives x_unavailable with its code", () => {
 
 test("FxTwitter's own error message is kept", () => {
 	assert.deepEqual(failure(() => decodePost(load("bad-id.json"))), { kind: "x_unavailable", code: 400, message: "id: tweet ID must be a numeric snowflake" });
+});
+
+test("a reply without a numeric code gives bad_response, not FxTwitter's own error", () => {
+	assert.deepEqual(failure(() => decodePost({ error: "rate limited" })), { kind: "bad_response", from: "fxtwitter", what: "code is not a number" });
 });
 
 test("a reply that is not an object gives bad_response", () => {
