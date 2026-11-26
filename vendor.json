@@ -18,9 +18,9 @@
           "skills/infisical-setup": "435d8d2539bba0d35f4c4c130cc1483c94f034ef",
           "LICENSE": "20362ab551bdeae44d58126ff1dd6c8dc442627f"
         },
-        "contentSha256": "0d4393aac505eee51390db264a272993a1214b5f3d154b95829181ff0d4f6354",
-        "patchedContentSha256": "c44b4f4afa76dd067357d7414d6f8e0280be484578c78615eba6005a6f20585b",
-        "contentSha256Method": "cd packages/infisical-ai-skills && find . -type f | sort | xargs shasum -a 256 | shasum -a 256 (contentSha256: upstream paths before patches; patchedContentSha256: after patches, what packages/ holds)"
+        "contentSha256": "6ff758fe2d939a829b4592dd028f1941699ce3655a722acf3432295b4edfa98f",
+        "patchedContentSha256": "1932b3e77ef0c94ea3f9e7bd93dbdfae1506dc10a76895c700f864bb592d8fc1",
+        "contentSha256Method": "cd packages/infisical-ai-skills && find . -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 (LC_ALL=C: the order of sort, and so the hash, otherwise depends on the locale; contentSha256: upstream paths before patches; patchedContentSha256: after patches, what packages/ holds)"
       },
       "license": "MIT",
       "vendoredAt": "2026-11-24",
