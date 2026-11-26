@@ -1,6 +1,7 @@
 # Fixtures
 
-Public data only. The HTML pages are written for the tests. The `magpie-*.json` files are replies of Magpie's
+Public data only. The HTML pages are written for the tests. The PDFs are made once by `make-pdf-fixtures.swift`
+(how to run it is at its top), from text written for the tests. The `magpie-*.json` files are replies of Magpie's
 `magpie-web-search` MCP server, recorded on 2026-11-26, with every private value replaced:
 
 - `magpie-searxng-down.json`: the SearXNG address is `searxng.internal:8080`.
