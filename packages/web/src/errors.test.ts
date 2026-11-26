@@ -111,3 +111,19 @@ test("WebToolError keeps the error it was caught from as its cause", () => {
 	const cause = Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });
 	assert.equal(new WebToolError({ kind: "network", code: "ECONNRESET", message: cause.message }, { cause }).cause, cause);
 });
+
+test("a server's text made of a long run of dots is read in linear time", () => {
+	const start = performance.now();
+	describe({ kind: "pdf_unreadable", reason: `${".".repeat(80_000)}x` });
+	assert.ok(performance.now() - start < 500, "a quadratic scan of the dots takes seconds");
+});
+
+for (const error of [
+	{ kind: "no_article", url: `https://example.com/${"a".repeat(2000)}` },
+	{ kind: "no_metadata", url: `https://example.com/${"a".repeat(2000)}`, site: "tiktok" },
+	{ kind: "unsupported_media_type", mimeType: `image/${"a".repeat(2000)}` },
+] as WebError[]) {
+	test(`${error.kind} cuts a server's long text too`, () => {
+		assert.ok(!describe(error).includes("a".repeat(501)));
+	});
+}

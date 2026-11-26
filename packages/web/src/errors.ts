@@ -56,7 +56,10 @@ function fromServer(text: string): string {
 
 /** A free-text field that is followed by a full stop of ours: its own final full stop would double it. */
 function withoutFinalStop(text: string): string {
-	return text.trimEnd().replace(/\.+$/, "");
+	// A loop, not /\.+$/: that regex retries from every dot of a long run, which takes seconds on a server's text.
+	let end = text.trimEnd().length;
+	while (end > 0 && text[end - 1] === ".") end--;
+	return text.slice(0, end);
 }
 
 /** The model-facing sentence for an error, with the next action when there is one. */
@@ -102,7 +105,7 @@ export function describe(error: WebError): string {
 		case "unsupported_charset":
 			return `Unsupported character set ${fromServer(error.charset)}.`;
 		case "no_article":
-			return `No article found on ${error.url}. Call fetch_content again with mode: "page" to get the whole page.`;
+			return `No article found on ${fromServer(error.url)}. Call fetch_content again with mode: "page" to get the whole page.`;
 		case "option_not_supported":
 			return `The option ${error.option} is not supported here: ${withoutFinalStop(error.reason)}.`;
 		case "pdf_unreadable":
@@ -112,11 +115,11 @@ export function describe(error: WebError): string {
 		case "x_unavailable":
 			return `FxTwitter, the third-party service that reads X posts, could not return this post (${error.code}: ${fromServer(error.message)}). Nothing else is tried.`;
 		case "no_metadata":
-			return `${error.url} exposes no title or description without JavaScript or a login. Its content needs e2e, with an agent account.`;
+			return `${fromServer(error.url)} exposes no title or description without JavaScript or a login. Its content needs e2e, with an agent account.`;
 		case "media_host_blocked":
 			return `Media host ${fromServer(error.host)} is not allowed.`;
 		case "unsupported_media_type":
-			return `Media type ${error.mimeType} is not an image that can be attached.`;
+			return `Media type ${fromServer(error.mimeType)} is not an image that can be attached.`;
 		case "image_undecodable":
 			return "The image could not be decoded.";
 		default: {
