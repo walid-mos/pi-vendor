@@ -70,6 +70,23 @@
       "vendoredAt": "2026-11-26",
       "testedWithPi": "1.6.0",
       "review": "Licenses: MIT, ISC, BSD-2-Clause, Apache-2.0. No install script (prepare scripts only, which a registry install never runs; installed with --ignore-scripts). No network or process access in the code that loads: domutils' fetch() is a local feed helper; linkedom's ./worker export, domino's .yarn and test files are never imported. unpdf 2.2.2 (2.2.3, published that day, was inside pnpm's minimumReleaseAge, for which pnpm wrote itself an exclusion; not taken) bundles a serverless pdf.js (1.7 MB, plus image decoders loaded only by registerImageDecoders): no eval and no Function constructor in the bundle, so there is no isEvalSupported to turn off; its 'workers' are in-process WorkerTasks; fetch and fs are used only for a document, font or CMap given by URL, and with no pdfjs-dist installed unpdf sets no font or CMap URL. gitleaks with .gitleaks.toml on node_modules (copied under another name, since the default rules skip node_modules): no finding."
+    },
+    "web-tools": {
+      "source": "own",
+      "dependencies": {
+        "e2e": "0.25.0",
+        "@e2e-dev/web": "0.17.0",
+        "chrome-devtools-mcp": "1.14.0"
+      },
+      "integrity": {
+        "e2e@0.25.0": "sha512-/FwatKZHyuguwJia4zqLLLjJuSJ0gYYLyJT3w+3oWQXvYhA/fXH/GAqxhkqemgD9pPYQ8+zgoInI/cTNost76w==",
+        "@e2e-dev/web@0.17.0": "sha512-Y/KFh3yI5o4F9lZYBGTPq6gryAnqifl22/jvszInxKk5RwqQSXq1KH5Xq1OLgs6V/2BMnZ8QVZykmgE3evuciw==",
+        "chrome-devtools-mcp@1.14.0": "sha512-sO7GYmqnvmjQ0l9jiuvw2DyPxi3nBATFbxvNU8ArapYOUXE79z6fbigKuDbJ8/jsi/4OA3OvHlGq83mHLwemGA=="
+      },
+      "node_modules": "not committed: the dotfiles install it from the frozen lockfile; pnpm-lock.yaml is the integrity record of the whole tree",
+      "vendoredAt": "2026-11-26",
+      "testedWithPi": "1.6.0",
+      "review": "Tree: 50 packages, licenses Apache-2.0, MIT, ISC, (AFL-2.1 OR BSD-3-Clause); no install, preinstall or postinstall script (chrome-devtools-mcp has a prepare script, which a registry install never runs); pnpm reports no build script awaiting approval. Agent skills offered by e2e and chrome-devtools-mcp are denied in pnpm-workspace.yaml (the e2e skill is vendored and reviewed in packages/e2e). Network calls made by themselves: e2e telemetry to eu.i.posthog.com and its npm latest-version check (only on a terminal), both off with E2E_TELEMETRY_DISABLED=1 in mcp.json; chrome-devtools-mcp usage statistics (play.googleapis.com/log) off with --no-usage-statistics, CrUX lookups (chromeuxreport.googleapis.com) off with --no-performance-crux, and its daily npm latest-version check off with CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS=1 in mcp.json; browsers are downloaded only by e2e-web install. Files written outside the run directory: e2e its preferences under ~/.config/e2e, Playwright its browsers under ~/Library/Caches/ms-playwright; chrome-devtools-mcp ~/.cache/chrome-devtools-mcp only for its update check and for a profile when it launches a browser itself, which our launcher never makes it do (--browserUrl)."
     }
   }
 }

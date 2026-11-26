@@ -1,0 +1,11 @@
+{
+  "name": "pi-web-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@e2e-dev/web": "0.17.0",
+    "chrome-devtools-mcp": "1.14.0",
+    "e2e": "0.25.0"
+  },
+  "packageManager": "pnpm@12.23.0"
+}

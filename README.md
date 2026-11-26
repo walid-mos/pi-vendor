@@ -19,6 +19,7 @@ packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnp
 | Dir | Upstream | Version |
 |---|---|---|
 | `web` | ours (`source: own`): the tools `web_search` and `fetch_content`, with `@mozilla/readability`, `linkedom`, `turndown` and `unpdf` vendored | `package.json` and `pnpm-lock.yaml` |
+| `web-tools` | ours (`source: own`), not loaded by Pi: e2e, `@e2e-dev/web` and chrome-devtools-mcp, pinned; `node_modules` installed by the dotfiles | `package.json` and `pnpm-lock.yaml` |
 | `infisical-ai-skills` | [`Infisical/ai-skills`](https://github.com/Infisical/ai-skills) (git, MIT): only `infisical-self-host`, `infisical-access-control`, `infisical-setup` | commit `4bd1270` |
 
 The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no provider extension is needed.
@@ -42,6 +43,8 @@ No script: upstream changes are followed through GitHub's per-path commit feeds,
 
 - `https://github.com/unjs/unpdf/releases.atom` (`web`: its bundled pdf.js parses untrusted files)
 - `https://github.com/FxEmbed/FxEmbed/commits/main/src/realms/api.atom` (`web`: FxTwitter's API, an external service `fetch_content` depends on)
+- `https://github.com/e2e-inc/e2e/releases.atom` (`web-tools`: e2e and its web engine, and the vendored skill `e2e`)
+- `https://github.com/ChromeDevTools/chrome-devtools-mcp/releases.atom` (`web-tools`: the `chrome` MCP server)
 
 When a vendored package is added or removed, update this list.
 

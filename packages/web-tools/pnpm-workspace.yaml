@@ -1,0 +1,8 @@
+# What the dependencies may do, decided once here so that no install ever asks or approves by itself.
+# e2e and chrome-devtools-mcp offer agent skills: denied, because the agent's skills are vendored and reviewed in
+# pi-vendor (packages/e2e), never linked by an install.
+permissions:
+  chrome-devtools-mcp:
+    skills: false
+  e2e:
+    skills: false
