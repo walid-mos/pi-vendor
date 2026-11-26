@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Tides of the North Sea - The Coastal Review</title>
+<meta name="author" content="Ada Marlow">
+<meta property="og:site_name" content="The Coastal Review">
+<meta property="article:published_time" content="2026-03-14T09:30:00Z">
+<style>.promo { color: red } body::after { content: "STYLE-TEXT-MARKER" }</style>
+<script>window.trackingId = "SCRIPT-TEXT-MARKER";</script>
+</head>
+<body>
+<nav><a href="/">Home</a> <a href="/news">News</a> <span>NAV-TEXT-MARKER</span></nav>
+<main>
+<article>
+<h1>Tides of the North Sea</h1>
+<p>The North Sea has two high tides a day, and their height changes with the phase of the moon. Fishermen along the
+coast have kept tide tables for centuries, and the oldest surviving one, kept in a harbour office, dates from 1658.</p>
+<p>Spring tides come shortly after a new or a full moon, when the sun and the moon pull in line. Neap tides come in
+between, and the difference between the two can reach two metres in the narrow estuaries of the eastern shore.</p>
+<h2>Reading a tide table</h2>
+<p>A tide table lists the time and the height of each high and low water. Read the <a href="/guides/tide-tables">guide to
+tide tables</a> before your first crossing, and check the <a href="https://tides.example.org/today">live readings</a>
+on the morning itself, because wind and pressure move the sea by tens of centimetres.</p>
+<p>Harbour offices still publish the table each year, and most of them now also print the corrections for summer time,
+which caught out many a visitor in the past.</p>
+<pre><code class="language-python">def height(hours_after_low):
+    return 1.2 + 2.4 * hours_after_low / 6
+</code></pre>
+<p>The formula above is the rule of twelfths in its simplest form, good enough to plan a walk across the flats but not
+to navigate by.</p>
+</article>
+</main>
+<footer><p>FOOTER-TEXT-MARKER Copyright The Coastal Review</p></footer>
+</body>
+</html>
