@@ -10,7 +10,7 @@ Pi loads each package from this checkout as a local package, so nothing is fetch
 vendor.json          # source, pinned version or commit, integrity and review notes for each package
 packages/<dir>/      # upstream contents (an npm tarball or a git commit, only the entry's paths when it lists some) with patches/<dir> applied, never edited by hand
 patches/<dir>/       # local changes, applied on top of packages/<dir> after each update
-packages/web/        # our own Pi package: code edited here, test first; node_modules/ vendored from its lockfile and committed
+packages/web/        # our own Pi package: code edited here; node_modules/ vendored from its lockfile and committed
 packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnpm-lock.yaml committed, node_modules/ installed by the dotfiles
 ```
 

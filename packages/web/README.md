@@ -1,7 +1,7 @@
 # web
 
 Our own Pi package: the tools `web_search` and `fetch_content`. Pi loads `extensions/index.ts` by its path from
-`~/.config/pi/package.json`. The code under `src/` is ours and is changed test first; its limits are named constants
+`~/.config/pi/package.json`. The code under `src/` is ours; its limits are named constants
 there, each with its reason.
 
 ## External services
