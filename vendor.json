@@ -33,6 +33,62 @@
       ],
       "review": "Markdown only (17 files: 3 SKILL.md, 13 references, LICENSE): no scripts, no executable files. Commands quoted are the official CLI installers (artifacts-cli.infisical.com, curl|bash in Docker/CI examples), `npx skills add`, `pip install infisicalsdk`; some lines still cite dl.cloudsmith.io, retired on 2026-09-16. No hidden instructions found. Our rules live in pi-agent skills/infisical, which takes precedence."
     },
+    "emilkowalski-skills": {
+      "source": "git",
+      "repository": "https://github.com/emilkowalski/skills",
+      "commit": "64eb3deb9a5fbfa041faf783e0bc3fd635872e9c",
+      "paths": [
+        "skills/animate",
+        "skills/animation-performance",
+        "skills/animation-vocabulary",
+        "skills/apple-design",
+        "skills/ask-emil",
+        "skills/ask-sonner",
+        "skills/break-ui",
+        "skills/choreograph",
+        "skills/emil-design-eng",
+        "skills/find-animation-opportunities",
+        "skills/gestures",
+        "skills/improve-animations",
+        "skills/learn-taste",
+        "skills/mobile-native",
+        "skills/pick-ui-library",
+        "skills/prototype",
+        "skills/remove-animations",
+        "skills/review-animations",
+        "LICENSE"
+      ],
+      "integrity": {
+        "gitTrees": {
+          "skills/animate": "6a0393c04fe65ec31746b67956c5d7775a8b9dec",
+          "skills/animation-performance": "70a3674a7db0ef9a27fc5e4eb2f9afc70ad2f0d8",
+          "skills/animation-vocabulary": "5b8f08921a61e64893d5d4572752b3362cb8a24d",
+          "skills/apple-design": "9bfcd2e17dbac4b390ab231bbf9bd3f3734b21ff",
+          "skills/ask-emil": "7da3d47af274c796c2f9f599db70619e1a3a734f",
+          "skills/ask-sonner": "4c2100bb05d30b4e3a889edf25bfbeb27c3f1447",
+          "skills/break-ui": "3366af548a363c2012e53503cbcf718dc07f047f",
+          "skills/choreograph": "d95a9d2f4f47c56c05c04522eab52c6d997215c3",
+          "skills/emil-design-eng": "8086a08e5ebde316c4b9226764f1f2196e1869fa",
+          "skills/find-animation-opportunities": "4a44e78f996f1e1877ab6d2c82596c64c36e8bb9",
+          "skills/gestures": "759639ab6e4ad2a8578dbf3a4d8cae7a43ecc64f",
+          "skills/improve-animations": "f5891a5e4a2b535d59daf89f763abe7ed29135e5",
+          "skills/learn-taste": "4d26b3fcff1c91b4fa82709839ca2f7f3e479c93",
+          "skills/mobile-native": "a728bbf1f4a20873d3c041a9151da4b710a86ae2",
+          "skills/pick-ui-library": "0fec768a94dee684dcbd0b8da8a438ca214443d0",
+          "skills/prototype": "4ea5b3b58efecc83751b275fb58b516bbf42010b",
+          "skills/remove-animations": "8d9dbf29d9e3153420d80e518a85abc3a9a4a68b",
+          "skills/review-animations": "5b83aaadbcae77e09b07b5057c342b8074f7225b",
+          "LICENSE": "57b46f1fd11dc62351ea548104a88aa3f659c11b"
+        },
+        "contentSha256": "ae5d0be14f4541dca59179a8b5398b38bb940d41b92961e62e48c4a701c084bf",
+        "contentSha256Method": "cd packages/emilkowalski-skills && find . -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 (LC_ALL=C: the order of sort, and so the hash, otherwise depends on the locale)"
+      },
+      "license": "MIT",
+      "vendoredAt": "2026-11-27",
+      "testedWithPi": "1.6.0",
+      "patches": [],
+      "review": "Markdown only (18 SKILL.md, 8 companion files next to them, LICENSE): no scripts, no executable files. Reviewed by scanning every file for shell commands, URLs, HTML comments and invisible characters, and by reading each frontmatter; the bodies were not read line by line. No install or network command is given to the agent; the skills tell it to edit the project's code, and learn-taste to write the user's design corrections into the project's DESIGN.md, a project skill or a lint check. URLs are documentation links (library sites, emilkowal.ski, easing tools). Zero-width spaces in improve-animations/PLAN-TEMPLATE.md only escape nested code fences. Left out: animate-expo (React Native and Expo) and write-swift (Swift), not web front end; ask-emil, animate, animation-performance and mobile-native still name them. ask-emil, learn-taste, pick-ui-library, prototype and review-animations set disable-model-invocation: they load only when called by name. harness check.sh reports those five descriptions without a 'Use when' and emil-design-eng's body over 500 lines (680): upstream style, kept."
+    },
     "web": {
       "source": "own",
       "dependencies": {

@@ -22,6 +22,7 @@ packages/web-tools/  # our own tooling, not loaded by Pi (e2e, MCP servers): pnp
 | `web-tools` | ours (`source: own`), not loaded by Pi: e2e, `@e2e-dev/web` and chrome-devtools-mcp, pinned; `node_modules` installed by the dotfiles | `package.json` and `pnpm-lock.yaml` |
 | `e2e` | [`e2e`](https://www.npmjs.com/package/e2e) (npm, Apache-2.0): only the skill `e2e` | the `e2e` version of `packages/web-tools` |
 | `infisical-ai-skills` | [`Infisical/ai-skills`](https://github.com/Infisical/ai-skills) (git, MIT): only `infisical-self-host`, `infisical-access-control`, `infisical-setup` | commit `4bd1270` |
+| `emilkowalski-skills` | [`emilkowalski/skills`](https://github.com/emilkowalski/skills) (git, MIT): its web front-end skills (design engineering and animation), without `animate-expo` and `write-swift` | commit `64eb3de` |
 
 The Magpie gateway is declared directly in Pi's `models.json` (provider `magpie`), so no provider extension is needed.
 Herdr's agent manuals are not vendored: they ship inside its binaries (`hc --skill`, `herdr-app --skill`) and always
@@ -41,6 +42,8 @@ No script: upstream changes are followed through GitHub's per-path commit feeds,
 - `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-setup.atom`
 - `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-self-host.atom`
 - `https://github.com/Infisical/ai-skills/commits/main/skills/infisical-access-control.atom`
+
+- `https://github.com/emilkowalski/skills/commits/main/skills.atom` (`emilkowalski-skills`: one feed for the whole `skills` directory, since new skills appear there)
 
 - `https://github.com/unjs/unpdf/releases.atom` (`web`: its bundled pdf.js parses untrusted files)
 - `https://github.com/FxEmbed/FxEmbed/commits/main/src/realms/api.atom` (`web`: FxTwitter's API, an external service `fetch_content` depends on)
